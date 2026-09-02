@@ -1,0 +1,27 @@
+{
+  "agentId": "QA",
+  "providers": [
+    "ollama-provider",
+    "vertex-gemini"
+  ],
+  "taskTypes": [
+    "code_review"
+  ],
+  "readPaths": [
+    "workspace/**"
+  ],
+  "writePaths": [
+    "staging/**"
+  ],
+  "denyPaths": [
+    "config/**",
+    "engine/wesa_engine/kernel/**",
+    "logs/**",
+    ".env*",
+    "**/.git/**"
+  ],
+  "tools": [],
+  "network": "none",
+  "execution": "none",
+  "maxArtifactKb": 512
+}

@@ -1,0 +1,43 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: wesa-sandbox
+servers: 1
+agents: 0
+image: docker.io/rancher/k3s:v1.35.5-k3s1@sha256:8bb3c7925bd3eb99b5916e0c5b63af3de4067aaa1f7e3140908f14946c29618c
+kubeAPI:
+  host: "127.0.0.1"
+  hostIP: "127.0.0.1"
+  hostPort: "6550"
+options:
+  k3d:
+    wait: true
+    timeout: "180s"
+    disableLoadbalancer: true
+    disableImageVolume: false
+    disableRollback: false
+  k3s:
+    extraArgs:
+      - arg: "--disable=traefik"
+        nodeFilters:
+          - server:*
+      - arg: "--disable=servicelb"
+        nodeFilters:
+          - server:*
+      - arg: "--disable=local-storage"
+        nodeFilters:
+          - server:*
+      - arg: "--disable=metrics-server"
+        nodeFilters:
+          - server:*
+      - arg: "--secrets-encryption"
+        nodeFilters:
+          - server:*
+  kubeconfig:
+    updateDefaultKubeconfig: false
+    switchCurrentContext: false
+  runtime:
+    labels:
+      - label: wesa.purpose=sandbox
+        nodeFilters:
+          - server:*

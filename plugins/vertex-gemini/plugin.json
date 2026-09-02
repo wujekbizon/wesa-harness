@@ -1,0 +1,17 @@
+{
+  "id": "vertex-gemini",
+  "version": "0.6.0",
+  "apiVersion": "1.0",
+  "kind": "model-provider",
+  "entrypoint": "wesa_engine.plugins.vertex_gemini:create_plugin",
+  "trusted": true,
+  "capabilities": ["adc-auth", "text-generation", "vision", "pdf-understanding", "usage-metrics"],
+  "config": {
+    "projectEnvironmentVariable": "GOOGLE_CLOUD_PROJECT",
+    "locationEnvironmentVariable": "GOOGLE_CLOUD_LOCATION",
+    "modelsEnvironmentVariable": "WESA_VERTEX_MODELS",
+    "defaultLocation": "global",
+    "defaultModels": ["gemini-2.5-flash"],
+    "timeoutSeconds": 300
+  }
+}

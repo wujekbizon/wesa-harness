@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wesa-network-drill
+  namespace: wesa-sandbox
+  labels:
+    app.kubernetes.io/name: wesa-sandbox-drill
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  initContainers:
+    - name: network-policy-barrier
+      image: docker.io/library/python:3.13-alpine@sha256:42825e7ec3437b3bce923c237484eb23d32128476e18307d2f48951bf86f1db2
+      imagePullPolicy: IfNotPresent
+      command:
+        - python
+        - -I
+        - -c
+        - |
+          import socket
+          import sys
+          import time
+
+          time.sleep(10)
+          targets = (("10.43.0.1", 443), ("1.1.1.1", 443))
+          for target in targets:
+              try:
+                  connection = socket.create_connection(target, timeout=2)
+                  connection.close()
+                  print("NETWORK_POLICY_NOT_READY")
+                  sys.exit(70)
+              except OSError:
+                  pass
+          print("NETWORK_POLICY_READY")
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 32Mi
+  containers:
+    - name: check
+      image: docker.io/library/python:3.13-alpine@sha256:42825e7ec3437b3bce923c237484eb23d32128476e18307d2f48951bf86f1db2
+      imagePullPolicy: IfNotPresent
+      command:
+        - python
+        - -c
+        - |
+          import socket, sys
+          try:
+              socket.create_connection(("1.1.1.1", 443), timeout=3).close()
+              print("EGRESS_ALLOWED")
+              sys.exit(42)
+          except OSError:
+              print("EGRESS_BLOCKED")
+              sys.exit(0)
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi

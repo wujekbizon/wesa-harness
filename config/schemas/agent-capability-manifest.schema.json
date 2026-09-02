@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WESA Agent Capability Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "agentId",
+    "providers",
+    "taskTypes",
+    "readPaths",
+    "writePaths",
+    "denyPaths",
+    "tools",
+    "network",
+    "execution",
+    "maxArtifactKb"
+  ],
+  "properties": {
+    "agentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "providers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "taskTypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "readPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "writePaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "denyPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "operations", "scopes", "approval"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "operations": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "scopes": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+          "approval": { "enum": ["auto-read", "axel", "greg"] }
+        }
+      }
+    },
+    "network": {
+      "enum": [
+        "none",
+        "public-read"
+      ]
+    },
+    "execution": {
+      "enum": [
+        "none",
+        "sandbox"
+      ]
+    },
+    "maxArtifactKb": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10240
+    }
+  }
+}

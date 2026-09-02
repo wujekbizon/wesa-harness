@@ -1,0 +1,36 @@
+{
+  "agentId": "EX1",
+  "providers": [
+    "ollama-provider",
+    "vertex-gemini"
+  ],
+  "taskTypes": [
+    "extract_pdf",
+    "validate_questions"
+  ],
+  "readPaths": [
+    "intake/wolfmed/**",
+    "staging/wolfmed/**"
+  ],
+  "writePaths": [
+    "staging/**"
+  ],
+  "denyPaths": [
+    "config/**",
+    "engine/wesa_engine/kernel/**",
+    "logs/**",
+    ".env*",
+    "**/.git/**"
+  ],
+  "tools": [
+    {
+      "name": "workspace.read_text",
+      "operations": ["read"],
+      "scopes": ["staging/wolfmed/**"],
+      "approval": "auto-read"
+    }
+  ],
+  "network": "none",
+  "execution": "none",
+  "maxArtifactKb": 512
+}

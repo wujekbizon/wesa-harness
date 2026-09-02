@@ -1,0 +1,43 @@
+{
+  "agentId": "D1",
+  "providers": [
+    "ollama-provider",
+    "vertex-gemini"
+  ],
+  "taskTypes": [
+    "code"
+  ],
+  "readPaths": [
+    "src/**",
+    "tests/**",
+    "docs/**",
+    "staging/**"
+  ],
+  "writePaths": [
+    "staging/**"
+  ],
+  "denyPaths": [
+    "config/**",
+    "engine/wesa_engine/kernel/**",
+    "logs/**",
+    ".env*",
+    "**/.git/**"
+  ],
+  "tools": [
+    {
+      "name": "workspace.read_text",
+      "operations": ["read"],
+      "scopes": ["src/**", "tests/**", "docs/**", "staging/**"],
+      "approval": "auto-read"
+    },
+    {
+      "name": "workspace.list_files",
+      "operations": ["read"],
+      "scopes": ["src/**", "tests/**", "docs/**", "staging/**"],
+      "approval": "auto-read"
+    }
+  ],
+  "network": "none",
+  "execution": "none",
+  "maxArtifactKb": 512
+}

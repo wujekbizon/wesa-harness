@@ -1,0 +1,56 @@
+{
+  "id": "safe-text-approval-v1",
+  "version": 1,
+  "name": "Safe text review with approval",
+  "description": "W1 drafts, Greg approves, then Q1 reviews the accepted draft.",
+  "stages": [
+    {
+      "id": "draft",
+      "name": "Draft",
+      "kind": "task",
+      "dependsOn": [],
+      "agentId": "W1",
+      "taskType": "write",
+      "providerId": null,
+      "model": null,
+      "promptTemplate": "{input}",
+      "outputFile": "draft.md",
+      "attachmentStages": [],
+      "maxAttempts": 2,
+      "repeatCount": 1,
+      "condition": "on-success"
+    },
+    {
+      "id": "greg-approval",
+      "name": "Greg approval",
+      "kind": "approval",
+      "dependsOn": ["draft"],
+      "agentId": null,
+      "taskType": null,
+      "providerId": null,
+      "model": null,
+      "promptTemplate": "Approve the generated draft before independent review.",
+      "outputFile": "approval.json",
+      "attachmentStages": [],
+      "maxAttempts": 1,
+      "repeatCount": 1,
+      "condition": "on-success"
+    },
+    {
+      "id": "review",
+      "name": "Review",
+      "kind": "task",
+      "dependsOn": ["greg-approval"],
+      "agentId": "Q1",
+      "taskType": "review",
+      "providerId": null,
+      "model": null,
+      "promptTemplate": "Review the approved attached draft. Return concise Markdown corrections.",
+      "outputFile": "review.md",
+      "attachmentStages": ["draft"],
+      "maxAttempts": 2,
+      "repeatCount": 1,
+      "condition": "on-success"
+    }
+  ]
+}

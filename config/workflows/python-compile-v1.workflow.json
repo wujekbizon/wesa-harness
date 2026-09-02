@@ -1,0 +1,44 @@
+{
+  "id": "python-compile-v1",
+  "version": 1,
+  "name": "Generate and sandbox-compile Python",
+  "description": "D1 generates Python; the accepted artifact is compiled in the Kubernetes sandbox.",
+  "stages": [
+    {
+      "id": "generate",
+      "name": "Generate Python",
+      "kind": "task",
+      "dependsOn": [],
+      "agentId": "D1",
+      "taskType": "code",
+      "providerId": null,
+      "model": null,
+      "sandboxProfile": null,
+      "sourceStage": null,
+      "promptTemplate": "{input}",
+      "outputFile": "generated.py",
+      "attachmentStages": [],
+      "maxAttempts": 2,
+      "repeatCount": 1,
+      "condition": "on-success"
+    },
+    {
+      "id": "compile",
+      "name": "Sandbox compile",
+      "kind": "sandbox",
+      "dependsOn": ["generate"],
+      "agentId": null,
+      "taskType": null,
+      "providerId": null,
+      "model": null,
+      "sandboxProfile": "python-compile",
+      "sourceStage": "generate",
+      "promptTemplate": "Compile the accepted Python artifact.",
+      "outputFile": "compile.json",
+      "attachmentStages": [],
+      "maxAttempts": 1,
+      "repeatCount": 1,
+      "condition": "on-success"
+    }
+  ]
+}

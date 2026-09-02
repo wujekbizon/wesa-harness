@@ -1,0 +1,18 @@
+{
+  "id": "ollama-provider",
+  "version": "0.6.0",
+  "apiVersion": "1.0",
+  "kind": "model-provider",
+  "entrypoint": "wesa_engine.plugins.ollama:create_plugin",
+  "trusted": true,
+  "capabilities": ["model-discovery", "streaming-chat", "local-models"],
+  "config": {
+    "endpointEnvironmentVariable": "WESA_OLLAMA_URL",
+    "defaultEndpoint": "http://127.0.0.1:11434",
+    "timeoutSeconds": 300,
+    "maxRetries": 2,
+    "maxConcurrency": 1,
+    "failureThreshold": 3,
+    "resetSeconds": 30
+  }
+}

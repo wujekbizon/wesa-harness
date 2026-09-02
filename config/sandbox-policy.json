@@ -1,0 +1,23 @@
+{
+  "namespace": "wesa-sandbox",
+  "profiles": {
+    "python-compile": {
+      "image": "docker.io/library/python:3.13-alpine@sha256:42825e7ec3437b3bce923c237484eb23d32128476e18307d2f48951bf86f1db2",
+      "command": ["python", "-I", "-c", "import subprocess\nimport sys\ntry:\n    result = subprocess.run(['python', '-m', 'py_compile', '/workspace/source/artifact.py'], timeout=30)\nexcept subprocess.TimeoutExpired:\n    print('SANDBOX_TIMEOUT', file=sys.stderr)\n    sys.exit(124)\nsys.exit(result.returncode)"],
+      "mediaTypes": ["text/x-python"],
+      "timeoutSeconds": 30,
+      "cpuLimit": "250m",
+      "memoryLimit": "128Mi",
+      "outputLimitKb": 256
+    },
+    "python-run": {
+      "image": "docker.io/library/python:3.13-alpine@sha256:42825e7ec3437b3bce923c237484eb23d32128476e18307d2f48951bf86f1db2",
+      "command": ["python", "-I", "-c", "import subprocess\nimport sys\ntry:\n    result = subprocess.run(['python', '-I', '/workspace/source/artifact.py'], timeout=10)\nexcept subprocess.TimeoutExpired:\n    print('SANDBOX_TIMEOUT', file=sys.stderr)\n    sys.exit(124)\nsys.exit(result.returncode)"],
+      "mediaTypes": ["text/x-python"],
+      "timeoutSeconds": 10,
+      "cpuLimit": "250m",
+      "memoryLimit": "128Mi",
+      "outputLimitKb": 256
+    }
+  }
+}

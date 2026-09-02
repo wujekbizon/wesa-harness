@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Wesa.Harness.Api/Wesa.Harness.Api.csproj" />
+    <Project Path="src/Wesa.Harness.Contracts/Wesa.Harness.Contracts.csproj" />
+    <Project Path="src/Wesa.Harness.Desktop/Wesa.Harness.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Wesa.Harness.Tests/Wesa.Harness.Tests.csproj" />
+  </Folder>
+</Solution>

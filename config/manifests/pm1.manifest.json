@@ -1,0 +1,28 @@
+{
+  "agentId": "PM1",
+  "providers": [
+    "ollama-provider",
+    "vertex-gemini"
+  ],
+  "taskTypes": [
+    "manage",
+    "coordinate"
+  ],
+  "readPaths": [
+    "workspace/**"
+  ],
+  "writePaths": [
+    "staging/**"
+  ],
+  "denyPaths": [
+    "config/**",
+    "engine/wesa_engine/kernel/**",
+    "logs/**",
+    ".env*",
+    "**/.git/**"
+  ],
+  "tools": [],
+  "network": "none",
+  "execution": "none",
+  "maxArtifactKb": 512
+}

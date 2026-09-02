@@ -1,0 +1,14 @@
+{
+  "id": "kubernetes-sandbox",
+  "version": "0.6.0",
+  "apiVersion": "1.0",
+  "kind": "sandbox",
+  "entrypoint": "wesa_engine.plugins.kubernetes_sandbox:create_plugin",
+  "trusted": true,
+  "capabilities": ["isolated-python", "no-network", "resource-limits", "immutable-images"],
+  "config": {
+    "policyFile": "config/sandbox-policy.json",
+    "enabledEnvironmentVariable": "WESA_SANDBOX_ENABLED",
+    "kubeconfigEnvironmentVariable": "WESA_KUBECONFIG"
+  }
+}

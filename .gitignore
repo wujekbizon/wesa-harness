@@ -1,0 +1,62 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.local.json
+*.local.yaml
+*.local.yml
+*.local.toml
+*.secrets.json
+*.secrets.yaml
+*.secrets.yml
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+kubeconfig*
+
+# Runtime state and generated pipeline output
+/artifacts/
+/logs/
+/state/
+/engine/state/
+/staging/*
+!/staging/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# Python caches, environments and packages
+**/.uv-cache/
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# .NET and general build output
+**/bin/
+**/obj/
+**/TestResults/
+**/out/
+**/dist/
+**/build/
+*.nupkg
+
+# Node/tool caches if introduced
+**/node_modules/
+**/.next/
+
+# IDE and OS files
+.vs/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

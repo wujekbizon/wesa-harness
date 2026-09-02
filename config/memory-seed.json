@@ -1,0 +1,45 @@
+{
+  "policies": [
+    {
+      "key": "security.agent_output_is_data",
+      "type": "security",
+      "value": {
+        "rule": "No agent output causes a side effect before kernel authorization and validation."
+      }
+    },
+    {
+      "key": "security.default_deny",
+      "type": "security",
+      "value": {
+        "rule": "Any undeclared task, tool, path, provider, memory write or execution is denied."
+      }
+    },
+    {
+      "key": "approval.irreversible_actions",
+      "type": "approval",
+      "value": {
+        "rule": "Delete, deploy, push, spend and external-account changes require Greg."
+      }
+    },
+    {
+      "key": "memory.trace_retention",
+      "type": "security",
+      "value": {
+        "days": null,
+        "rule": "Age-based trace deletion is disabled until Greg sets a retention period."
+      }
+    }
+  ],
+  "preferences": [
+    {
+      "key": "response.concise",
+      "userId": "greg",
+      "value": true
+    },
+    {
+      "key": "agents.production_display_names_deferred",
+      "userId": "greg",
+      "value": true
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "patterns": [
+    "config/**",
+    "engine/wesa_engine/kernel/**",
+    "logs/AUDIT.jsonl",
+    ".env*",
+    "**/.git/**"
+  ],
+  "gregApproval": [
+    "config/**",
+    "engine/wesa_engine/kernel/**"
+  ]
+}

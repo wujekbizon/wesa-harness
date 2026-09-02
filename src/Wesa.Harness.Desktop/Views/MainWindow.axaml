@@ -1,0 +1,182 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Wesa.Harness.Desktop.ViewModels"
+        xmlns:agents="using:Wesa.Harness.Contracts.Agents"
+        xmlns:providers="using:Wesa.Harness.Contracts.Providers"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="820"
+        x:Class="Wesa.Harness.Desktop.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="1280"
+        Height="820"
+        MinWidth="1000"
+        MinHeight="680"
+        Title="WESA Harness">
+
+    <Design.DataContext>
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="64,*" Background="#0B0D10">
+        <Border Grid.Row="0" Background="#12151A" BorderBrush="#252A32" BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="20,0">
+                <TextBlock VerticalAlignment="Center" FontSize="20" FontWeight="SemiBold" Foreground="#F4F6F8"
+                           Text="WESA Harness" />
+                <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="18,2,0,0" Foreground="#7E8997"
+                           Text="P6 · Orchestration · providers · plugins" />
+                <Border Grid.Column="2" VerticalAlignment="Center" Background="#18231D" CornerRadius="12" Padding="12,5">
+                    <TextBlock Foreground="#77D39A" Text="{Binding Status}" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="230,*">
+            <Border Background="#101318" BorderBrush="#252A32" BorderThickness="0,0,1,0" Padding="18">
+                <StackPanel Spacing="8">
+                    <TextBlock Margin="4,8,0,14" Foreground="#6F7885" FontSize="12" Text="HARNESS" />
+                    <Button Content="Task runner" HorizontalContentAlignment="Left" />
+                    <Button Content="Agents" HorizontalContentAlignment="Left" IsEnabled="False" />
+                    <Button Content="Plugins" HorizontalContentAlignment="Left" IsEnabled="False" />
+                    <Button Content="Pipelines" HorizontalContentAlignment="Left" IsEnabled="False" />
+                    <Button Content="Approvals" HorizontalContentAlignment="Left" IsEnabled="False" />
+                    <Button Content="Audit" HorizontalContentAlignment="Left" IsEnabled="False" />
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Column="1" Margin="28" RowDefinitions="Auto,Auto,Auto,*,Auto,2*,Auto">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                        <TextBlock FontSize="28" FontWeight="SemiBold" Foreground="#F4F6F8" Text="Local agent task" />
+                        <TextBlock Margin="0,6,0,0" Foreground="#8D97A5"
+                                   Text="Select a migrated agent profile and any compatible model installed in Ollama." />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Padding="18,8" Content="Sandbox compile"
+                                Command="{Binding RunSandboxCompileCommand}" />
+                        <Button Padding="18,8" Content="Run W1 → Q1 pipeline"
+                                Command="{Binding RunTextReviewPipelineCommand}" />
+                        <Button Padding="20,8" Content="Connect / refresh"
+                                Command="{Binding ConnectCommand}" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="1" Margin="0,20,0,0" ColumnDefinitions="*,16,*">
+                    <StackPanel>
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Control plane URL" />
+                        <TextBox Text="{Binding ApiAddress}" PlaceholderText="http://127.0.0.1:5035" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Workspace root" />
+                        <TextBox Text="{Binding WorkspaceRoot}" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="2" Margin="0,16,0,0" ColumnDefinitions="*,16,*,16,*,16,*">
+                    <StackPanel>
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Agent profile" />
+                        <ComboBox ItemsSource="{Binding Agents}" SelectedItem="{Binding SelectedAgent}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="agents:AgentProfileDto">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Role}" />
+                                        <TextBlock Foreground="#707987" Text=" · " />
+                                        <TextBlock Foreground="#9BA6B5" Text="{Binding Id}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Task type" />
+                        <ComboBox ItemsSource="{Binding TaskTypes}" SelectedItem="{Binding SelectedTaskType}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="4">
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Model provider" />
+                        <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding SelectedProvider}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="providers:ProviderInfoDto">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Id}" />
+                                        <TextBlock Margin="6,0,0,0" Foreground="#707987" Text="{Binding Status}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="6">
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Provider model" />
+                        <ComboBox ItemsSource="{Binding Models}" SelectedItem="{Binding SelectedModel}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="providers:ModelInfoDto">
+                                    <TextBlock Text="{Binding Name}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="3" Margin="0,18,0,0" RowDefinitions="Auto,*">
+                    <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Task prompt" />
+                    <TextBox Grid.Row="1" Text="{Binding Prompt}" AcceptsReturn="True" TextWrapping="Wrap"
+                             MinHeight="130" VerticalContentAlignment="Top" />
+                </Grid>
+
+                <Grid Grid.Row="4" Margin="0,16,0,0" ColumnDefinitions="*,16,*,Auto">
+                    <StackPanel>
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Gated output path" />
+                        <TextBox Text="{Binding OutputPath}" PlaceholderText="staging/result.md" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Text attachments · semicolon separated" />
+                        <TextBox Text="{Binding AttachmentPaths}" PlaceholderText="docs/source.md; src/file.py" />
+                    </StackPanel>
+                    <Button Grid.Column="3" Margin="16,22,0,0" Padding="26,9" Content="Run secured task"
+                            Command="{Binding RunTaskCommand}" />
+                </Grid>
+
+                <Grid Grid.Row="5" Margin="0,18,0,0" RowDefinitions="Auto,*">
+                    <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Gated result" />
+                    <TextBox Grid.Row="1" Text="{Binding Result}" IsReadOnly="True" AcceptsReturn="True"
+                             TextWrapping="Wrap" VerticalContentAlignment="Top" />
+                </Grid>
+
+                <Border Grid.Row="6" Margin="0,18,0,0" Padding="14" Background="#12151A"
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock FontWeight="SemiBold" Foreground="#F4F6F8" Text="Gate Inspector" />
+                            <TextBlock Grid.Column="1" Margin="14,1,0,0" Foreground="#8D97A5"
+                                       Text="{Binding GateSummary}" TextWrapping="Wrap" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding GateSteps}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GateInspectorStep">
+                                    <Border Width="142" MinHeight="78" Margin="0,0,8,6" Padding="10"
+                                            Background="#0D1014" CornerRadius="6">
+                                        <StackPanel Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#DDE2E8"
+                                                           Text="{Binding Stage}" />
+                                                <TextBlock Grid.Column="1" FontSize="10" Foreground="{Binding StateColor}"
+                                                           Text="{Binding State}" />
+                                            </Grid>
+                                            <TextBlock FontSize="10" Foreground="#7E8997" TextWrapping="Wrap"
+                                                       Text="{Binding Detail}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

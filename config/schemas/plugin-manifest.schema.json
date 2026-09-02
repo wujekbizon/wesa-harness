@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WESA Harness Plugin Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "version", "apiVersion", "kind", "entrypoint", "trusted", "capabilities", "config"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "apiVersion": { "const": "1.0" },
+    "kind": { "enum": ["model-provider", "embedding-provider", "retrieval", "document-extractor", "tool", "memory", "sandbox", "scheduler", "pipeline", "storage", "ui"] },
+    "entrypoint": { "type": "string", "pattern": "^[A-Za-z0-9_.]+:[A-Za-z0-9_]+$" },
+    "trusted": { "type": "boolean" },
+    "capabilities": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "config": { "type": "object" }
+  }
+}

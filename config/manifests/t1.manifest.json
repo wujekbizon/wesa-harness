@@ -1,0 +1,34 @@
+{
+  "agentId": "T1",
+  "providers": [
+    "ollama-provider",
+    "vertex-gemini"
+  ],
+  "taskTypes": [
+    "test"
+  ],
+  "readPaths": [
+    "staging/**"
+  ],
+  "writePaths": [
+    "staging/**"
+  ],
+  "denyPaths": [
+    "config/**",
+    "engine/wesa_engine/kernel/**",
+    "logs/**",
+    ".env*",
+    "**/.git/**"
+  ],
+  "tools": [
+    {
+      "name": "workspace.read_text",
+      "operations": ["read"],
+      "scopes": ["staging/**"],
+      "approval": "greg"
+    }
+  ],
+  "network": "none",
+  "execution": "none",
+  "maxArtifactKb": 512
+}

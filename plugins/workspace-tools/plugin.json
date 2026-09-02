@@ -1,0 +1,12 @@
+{
+  "id": "workspace-tools",
+  "version": "0.6.0",
+  "apiVersion": "1.0",
+  "kind": "tool",
+  "entrypoint": "wesa_engine.plugins.workspace_tools:create_plugin",
+  "trusted": true,
+  "capabilities": ["workspace-read", "scoped-list"],
+  "config": {
+    "maxReadKb": 256
+  }
+}

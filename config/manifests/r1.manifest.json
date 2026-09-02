@@ -1,0 +1,29 @@
+{
+  "agentId": "R1",
+  "providers": [
+    "ollama-provider",
+    "vertex-gemini"
+  ],
+  "taskTypes": [
+    "research",
+    "analyze",
+    "general"
+  ],
+  "readPaths": [
+    "workspace/**"
+  ],
+  "writePaths": [
+    "staging/**"
+  ],
+  "denyPaths": [
+    "config/**",
+    "engine/wesa_engine/kernel/**",
+    "logs/**",
+    ".env*",
+    "**/.git/**"
+  ],
+  "tools": [],
+  "network": "public-read",
+  "execution": "none",
+  "maxArtifactKb": 512
+}

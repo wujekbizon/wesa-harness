@@ -1,0 +1,13 @@
+{
+  "id": "wolfmed-content",
+  "version": "0.7.0",
+  "apiVersion": "1.0",
+  "kind": "pipeline",
+  "entrypoint": "wesa_engine.plugins.wolfmed_content:create_plugin",
+  "trusted": true,
+  "capabilities": ["pdf-text-extraction", "txt-intake", "stable-chunking", "question-release"],
+  "config": {
+    "maxSourceMb": 100,
+    "maxChunks": 400
+  }
+}
