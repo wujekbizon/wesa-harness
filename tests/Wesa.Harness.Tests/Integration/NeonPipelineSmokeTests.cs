@@ -156,6 +156,54 @@ public sealed class NeonPipelineSmokeTests
 
     [Fact]
     [Trait("Category", "NeonPipeline")]
+    public async Task Failed_stage_blocks_on_success_downstream_stage()
+    {
+        var configuration = new ConfigurationBuilder().AddUserSecrets<Wesa.Harness.Api.Program>().Build();
+        var connectionString = configuration.GetConnectionString("HarnessDatabase");
+        connectionString.Should().NotBeNullOrWhiteSpace();
+        var correlationId = $"pipeline-failure-{Guid.NewGuid():N}";
+        var smokeRoot = Path.Combine(FindHarnessRoot(), "state", "pipeline-smoke", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(smokeRoot);
+        Guid? workspaceId = null;
+        Guid? runId = null;
+        try
+        {
+            await using var factory = new CustomWebApplicationFactory(connectionString!, useRealEngine: false);
+            using var client = factory.CreateClient();
+            client.DefaultRequestHeaders.Add(LocalCapabilityAuthenticationHandler.Header, "integration-test-token");
+            client.DefaultRequestHeaders.Add("X-Correlation-Id", correlationId);
+            var workspaceResponse = await client.PostAsJsonAsync(
+                "/api/workspaces",
+                new RegisterWorkspaceRequest("Failure propagation smoke", smokeRoot));
+            var workspace = await workspaceResponse.Content.ReadFromJsonAsync<WorkspaceDto>();
+            workspaceId = workspace!.Id;
+
+            var startResponse = await client.PostAsJsonAsync(
+                "/api/pipelines",
+                new StartPipelineRequest(
+                    workspace.Id,
+                    "safe-text-review-v1",
+                    "__STUB_FAILURE__",
+                    "ollama-provider",
+                    "test-model:latest"));
+            startResponse.StatusCode.Should().Be(HttpStatusCode.Accepted);
+            var run = await startResponse.Content.ReadFromJsonAsync<PipelineRunDto>();
+            runId = run!.Id;
+            run = await WaitForCompletion(client, run.Id);
+
+            run.Status.Should().Be("failed");
+            run.Stages.Single(value => value.StageKey == "draft").Status.Should().Be("failed");
+            run.Stages.Single(value => value.StageKey == "review").Status.Should().Be("blocked");
+            run.Stages.Single(value => value.StageKey == "review").TaskId.Should().BeNull();
+        }
+        finally
+        {
+            await Cleanup(connectionString!, workspaceId, runId, correlationId, smokeRoot);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "NeonPipeline")]
     public async Task Wolfmed_pipeline_expands_chunks_validates_approves_and_releases()
     {
         var configuration = new ConfigurationBuilder().AddUserSecrets<Wesa.Harness.Api.Program>().Build();

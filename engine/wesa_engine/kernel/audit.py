@@ -60,12 +60,14 @@ class AuditLog:
             try:
                 descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
                 os.write(descriptor, str(os.getpid()).encode("ascii"))
-            except FileExistsError:
+            # Windows can surface an exclusive-create collision as EACCES while
+            # another thread still holds the lock file open.
+            except (FileExistsError, PermissionError):
                 try:
                     if time.time() - lock_path.stat().st_mtime > 60:
                         lock_path.unlink()
                         continue
-                except FileNotFoundError:
+                except (FileNotFoundError, PermissionError):
                     continue
                 if time.monotonic() >= deadline:
                     raise AuditError("timed out waiting for audit lock")

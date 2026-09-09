@@ -22,6 +22,24 @@ public sealed class StubEngineClient : IEngineClient
 
     public Task<TaskExecutionResponse> ExecuteTask(TaskEnvelopeV2 envelope, CancellationToken cancellationToken)
     {
+        if (envelope.Task.Prompt.Contains("__STUB_FAILURE__", StringComparison.Ordinal))
+        {
+            return Task.FromResult(new TaskExecutionResponse(
+                envelope.Task.Id,
+                envelope.Task.AgentId,
+                "failed",
+                "reject",
+                true,
+                envelope.Task.Provider,
+                envelope.Task.Model,
+                Guid.NewGuid().ToString(),
+                "text/markdown",
+                new string('f', 64),
+                envelope.Task.OutputFile,
+                null,
+                ["stubbed task failure"],
+                []));
+        }
         var python = string.Equals(Path.GetExtension(envelope.Task.OutputFile), ".py", StringComparison.OrdinalIgnoreCase);
         return Task.FromResult(new TaskExecutionResponse(
             envelope.Task.Id,
