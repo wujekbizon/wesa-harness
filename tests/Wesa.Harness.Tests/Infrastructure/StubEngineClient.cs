@@ -150,6 +150,25 @@ public sealed class StubEngineClient : IEngineClient
             []));
     }
 
+    public Task<RagRetrievalResponse> RetrieveRag(
+        TaskEnvelopeV2 envelope,
+        string collectionId,
+        string query,
+        int topK,
+        CancellationToken cancellationToken)
+        => Task.FromResult(new RagRetrievalResponse(envelope.Task.Id, collectionId, []));
+
+    public Task<RagUploadResponse> UploadRag(
+        TaskEnvelopeV2 envelope,
+        string collectionId,
+        string sourcePath,
+        string displayName,
+        CancellationToken cancellationToken)
+        => Task.FromResult(new RagUploadResponse(
+            envelope.Task.Id,
+            collectionId,
+            JsonSerializer.SerializeToElement(new { name = displayName, sourcePath })));
+
     public Task<AgentProfilesDto> ListAgents(CancellationToken cancellationToken)
         => Task.FromResult(new AgentProfilesDto(
             [new AgentProfileDto(

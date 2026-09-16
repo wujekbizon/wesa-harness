@@ -1,0 +1,18 @@
+{
+  "id": "vertex-rag",
+  "version": "0.1.0",
+  "apiVersion": "1.0",
+  "kind": "retrieval",
+  "entrypoint": "wesa_engine.plugins.vertex_rag:create_plugin",
+  "trusted": true,
+  "capabilities": ["retrieve-contexts", "approved-corpus-mapping", "adc-auth"],
+  "config": {
+    "projectEnvironmentVariable": "WESA_VERTEX_RAG_PROJECT",
+    "locationEnvironmentVariable": "WESA_VERTEX_RAG_LOCATION",
+    "corporaEnvironmentVariable": "WESA_VERTEX_RAG_CORPORA",
+    "defaultLocation": "us-central1",
+    "timeoutSeconds": 30,
+    "vectorDistanceThreshold": 0.34,
+    "stateConfigPath": "engine/state/vertex-rag-config.json"
+  }
+}

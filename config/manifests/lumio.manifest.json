@@ -1,0 +1,12 @@
+{
+  "agentId": "LUMIO",
+  "providers": ["vertex-rag", "ollama-provider"],
+  "taskTypes": ["rag_retrieve", "rag_upload", "lumio_chat"],
+  "readPaths": ["staging/lumio/**"],
+  "writePaths": ["staging/lumio/**"],
+  "denyPaths": ["config/**", "engine/wesa_engine/kernel/**", "logs/**", ".env*", "**/.git/**"],
+  "tools": [],
+  "network": "none",
+  "execution": "none",
+  "maxArtifactKb": 1024
+}

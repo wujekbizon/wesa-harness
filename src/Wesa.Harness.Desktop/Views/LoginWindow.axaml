@@ -1,0 +1,66 @@
+<Window x:Class="Wesa.Harness.Desktop.Views.LoginWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Wesa.Harness.Desktop.ViewModels"
+        x:DataType="vm:LoginViewModel"
+        Title="WESA Harness — Login"
+        Width="800"
+        Height="550"
+        MinWidth="800"
+        MinHeight="550"
+        MaxWidth="800"
+        MaxHeight="550"
+        WindowDecorations="None"
+        TransparencyLevelHint="AcrylicBlur"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen">
+    <Border CornerRadius="11">
+        <Border.Background>
+            <ImageBrush Source="avares://Wesa.Harness.Desktop/Assets/aiGlobe.jpg" Stretch="UniformToFill" />
+        </Border.Background>
+        <Border Margin="0" CornerRadius="10" BorderThickness="1.5"
+                BorderBrush="{DynamicResource AccentPurpleLight}"
+                Background="{DynamicResource LoginGradient}">
+            <Grid RowDefinitions="30,*">
+                <Grid ColumnDefinitions="*,25,25,5">
+                    <TextBlock Grid.Column="0" Margin="10,0,0,0" VerticalAlignment="Center"
+                               FontSize="11" Foreground="#B0BCC7" Text="LOG IN" />
+                    <Button Grid.Column="1" Classes="window-control" Content="—"
+                            Click="MinimizeWindow" />
+                    <Button Grid.Column="2" Classes="window-control close" Content="×"
+                            Click="CloseWindow" />
+                </Grid>
+
+                <StackPanel Grid.Row="1" Width="250" HorizontalAlignment="Center"
+                            Margin="0,22,0,20" Spacing="0">
+                    <Border Width="76" Height="76" HorizontalAlignment="Center" CornerRadius="38"
+                            Background="{DynamicResource AccentPurpleBorderSubtle}"
+                            BorderBrush="{DynamicResource AccentPurpleLight}" BorderThickness="2">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontSize="38" FontWeight="SemiBold" Foreground="White" Text="W" />
+                    </Border>
+                    <TextBlock Margin="0,12,0,0" HorizontalAlignment="Center"
+                               FontSize="16" Foreground="White" Text="WESA HARNESS" />
+                    <TextBlock Margin="0,4,0,28" HorizontalAlignment="Center"
+                               FontSize="11" Foreground="#B0BCC7" Text="LOCAL AGENT CONTROL PLANE" />
+
+                    <TextBlock Foreground="#B0BCC7" FontSize="11" Text="Operator" />
+                    <TextBox Margin="0,5,0,10" Height="40" Text="{Binding Username}" />
+                    <TextBlock Foreground="#B0BCC7" FontSize="11" Text="Password / admin token" />
+                    <TextBox Margin="0,5,0,0" Height="40" Text="{Binding CapabilityToken}" PasswordChar="●" />
+                    <TextBlock Margin="0,8,0,0" Foreground="{DynamicResource MedicalAlert}"
+                               FontSize="11" TextWrapping="Wrap" Text="{Binding ErrorMessage}" />
+                    <Button Classes="primary" Margin="0,20,0,0" Height="40"
+                            Content="Log in to account" Command="{Binding LoginCommand}" />
+                    <StackPanel Margin="0,14,0,0" HorizontalAlignment="Center">
+                        <TextBlock HorizontalAlignment="Center" FontSize="11" Foreground="#B0BCC7"
+                                   Text="Token stored locally? Paste a new one." />
+                        <Button Classes="link" HorizontalAlignment="Center" Margin="0,2,0,0"
+                                Content="Initialize fresh local Harness"
+                                Command="{Binding InitializeLocalCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Border>
+</Window>

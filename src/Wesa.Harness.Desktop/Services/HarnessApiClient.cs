@@ -10,6 +10,7 @@ using Wesa.Harness.Contracts.Sandbox;
 using Wesa.Harness.Contracts.Observability;
 using Wesa.Harness.Contracts.Tasks;
 using Wesa.Harness.Contracts.Workspaces;
+using Wesa.Harness.Contracts.Plugins;
 
 namespace Wesa.Harness.Desktop.Services;
 
@@ -19,6 +20,9 @@ public sealed class HarnessApiClient : IDisposable
     private readonly HubConnection _hub;
 
     public event Action<JsonElement>? TrajectoryEvent;
+
+    public sealed record BootstrapStatus(bool Initialized, bool LegacyConfigPresent);
+    public sealed record BootstrapIssued(string AdminToken, string LumioToken, string Warning);
 
     public HarnessApiClient(Uri baseAddress, string capabilityToken)
     {
@@ -36,6 +40,18 @@ public sealed class HarnessApiClient : IDisposable
     {
         using var response = await _client.GetAsync("/health", cancellationToken);
         return response.StatusCode == HttpStatusCode.OK;
+    }
+
+    public async Task<BootstrapStatus> GetBootstrapStatus(CancellationToken cancellationToken)
+        => await _client.GetFromJsonAsync<BootstrapStatus>("/api/bootstrap/status", cancellationToken)
+            ?? throw new InvalidOperationException("Bootstrap status response was empty");
+
+    public async Task<BootstrapIssued> InitializeBootstrap(CancellationToken cancellationToken)
+    {
+        using var response = await _client.PostAsync("/api/bootstrap/initialize", null, cancellationToken);
+        await EnsureSuccess(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<BootstrapIssued>(cancellationToken)
+            ?? throw new InvalidOperationException("Bootstrap response was empty");
     }
 
     public async Task<WorkspaceDto> RegisterWorkspace(
@@ -66,6 +82,13 @@ public sealed class HarnessApiClient : IDisposable
         return response.Providers;
     }
 
+    public async Task<IReadOnlyList<PluginInfoDto>> ListPlugins(CancellationToken cancellationToken)
+    {
+        var response = await _client.GetFromJsonAsync<PluginsDto>("/api/plugins", cancellationToken)
+            ?? throw new InvalidOperationException("Plugin response was empty");
+        return response.Plugins;
+    }
+
     public async Task<IReadOnlyList<ModelInfoDto>> ListModels(
         string providerId,
         CancellationToken cancellationToken)
@@ -82,6 +105,50 @@ public sealed class HarnessApiClient : IDisposable
             "/api/observability/metrics",
             cancellationToken)
             ?? throw new InvalidOperationException("Metrics response was empty");
+
+    public async Task<IReadOnlyList<TrajectoryEventDto>> GetLumioEvents(
+        int limit,
+        CancellationToken cancellationToken)
+        => await _client.GetFromJsonAsync<IReadOnlyList<TrajectoryEventDto>>(
+            $"/api/observability/lumio/events?limit={limit}",
+            cancellationToken)
+            ?? throw new InvalidOperationException("Lumio events response was empty");
+
+    public async Task<VertexRagConfigurationDto> GetRagConfiguration(CancellationToken cancellationToken)
+        => await _client.GetFromJsonAsync<VertexRagConfigurationDto>("/api/rag/config", cancellationToken)
+            ?? throw new InvalidOperationException("RAG configuration response was empty");
+
+    public async Task<VertexRagConfigurationDto> SaveRagConfiguration(
+        VertexRagConfigurationDto value,
+        CancellationToken cancellationToken)
+    {
+        using var response = await _client.PutAsJsonAsync("/api/rag/config", value, cancellationToken);
+        await EnsureSuccess(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<VertexRagConfigurationDto>(cancellationToken)
+            ?? throw new InvalidOperationException("RAG configuration response was empty");
+    }
+
+    public async Task<IReadOnlyList<CapabilityTokenInfoDto>> ListCapabilityTokens(CancellationToken cancellationToken)
+        => await _client.GetFromJsonAsync<IReadOnlyList<CapabilityTokenInfoDto>>("/api/security/tokens", cancellationToken)
+            ?? throw new InvalidOperationException("Token response was empty");
+
+    public async Task<IssuedCapabilityTokenDto> RotateCapabilityToken(Guid id, CancellationToken cancellationToken)
+    {
+        using var response = await _client.PostAsync($"/api/security/tokens/{id}/rotate", null, cancellationToken);
+        await EnsureSuccess(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<IssuedCapabilityTokenDto>(cancellationToken)
+            ?? throw new InvalidOperationException("Token rotation response was empty");
+    }
+
+    public async Task<IssuedCapabilityTokenDto> CreateCapabilityToken(
+        CreateCapabilityTokenRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        using var response = await _client.PostAsJsonAsync("/api/security/tokens", request, cancellationToken);
+        await EnsureSuccess(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<IssuedCapabilityTokenDto>(cancellationToken)
+            ?? throw new InvalidOperationException("Token creation response was empty");
+    }
 
     public async Task<TaskDto> SubmitTask(SubmitTaskRequest request, CancellationToken cancellationToken)
     {

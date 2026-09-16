@@ -3,6 +3,7 @@
         xmlns:vm="using:Wesa.Harness.Desktop.ViewModels"
         xmlns:agents="using:Wesa.Harness.Contracts.Agents"
         xmlns:providers="using:Wesa.Harness.Contracts.Providers"
+        xmlns:plugins="using:Wesa.Harness.Contracts.Plugins"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1280" d:DesignHeight="820"
@@ -36,17 +37,30 @@
             <Border Background="#101318" BorderBrush="#252A32" BorderThickness="0,0,1,0" Padding="18">
                 <StackPanel Spacing="8">
                     <TextBlock Margin="4,8,0,14" Foreground="#6F7885" FontSize="12" Text="HARNESS" />
-                    <Button Content="Task runner" HorizontalContentAlignment="Left" />
-                    <Button Content="Agents" HorizontalContentAlignment="Left" IsEnabled="False" />
-                    <Button Content="Plugins" HorizontalContentAlignment="Left" IsEnabled="False" />
-                    <Button Content="Pipelines" HorizontalContentAlignment="Left" IsEnabled="False" />
-                    <Button Content="Approvals" HorizontalContentAlignment="Left" IsEnabled="False" />
-                    <Button Content="Audit" HorizontalContentAlignment="Left" IsEnabled="False" />
+                    <Button Classes="nav" Content="Task runner" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowTaskRunnerCommand}" />
+                    <Button Classes="nav" Content="Agents" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowAgentsCommand}" />
+                    <Button Classes="nav" Content="RAG" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowRagCommand}" />
+                    <Button Classes="nav" Content="Lumio telemetry" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowLumioCommand}" />
+                    <Button Classes="nav" Content="Plugins" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowPluginsCommand}" />
+                    <Button Classes="nav" Content="Pipelines" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowPipelinesCommand}" />
+                    <Button Classes="nav" Content="Approvals" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowApprovalsCommand}" />
+                    <Button Classes="nav" Content="Audit" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowAuditCommand}" />
+                    <Button Classes="nav" Content="Security" HorizontalContentAlignment="Left"
+                            Command="{Binding ShowSecurityCommand}" />
                 </StackPanel>
             </Border>
 
-            <Grid Grid.Column="1" Margin="28" RowDefinitions="Auto,Auto,Auto,*,Auto,2*,Auto">
-                <Grid ColumnDefinitions="*,Auto">
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid Margin="28" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsTaskRunnerVisible}">
                     <StackPanel>
                         <TextBlock FontSize="28" FontWeight="SemiBold" Foreground="#F4F6F8" Text="Local agent task" />
                         <TextBlock Margin="0,6,0,0" Foreground="#8D97A5"
@@ -57,12 +71,13 @@
                                 Command="{Binding RunSandboxCompileCommand}" />
                         <Button Padding="18,8" Content="Run W1 → Q1 pipeline"
                                 Command="{Binding RunTextReviewPipelineCommand}" />
-                        <Button Padding="20,8" Content="Connect / refresh"
+                        <Button Classes="primary" Padding="20,8" Content="Connect / refresh"
                                 Command="{Binding ConnectCommand}" />
                     </StackPanel>
                 </Grid>
 
-                <Grid Grid.Row="1" Margin="0,20,0,0" ColumnDefinitions="*,16,*">
+                <Grid Grid.Row="1" Margin="0,20,0,0" ColumnDefinitions="*,16,*"
+                      IsVisible="{Binding IsTaskRunnerVisible}">
                     <StackPanel>
                         <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Control plane URL" />
                         <TextBox Text="{Binding ApiAddress}" PlaceholderText="http://127.0.0.1:5035" />
@@ -73,7 +88,8 @@
                     </StackPanel>
                 </Grid>
 
-                <Grid Grid.Row="2" Margin="0,16,0,0" ColumnDefinitions="*,16,*,16,*,16,*">
+                <Grid Grid.Row="2" Margin="0,16,0,0" ColumnDefinitions="*,16,*,16,*,16,*"
+                      IsVisible="{Binding IsTaskRunnerVisible}">
                     <StackPanel>
                         <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Agent profile" />
                         <ComboBox ItemsSource="{Binding Agents}" SelectedItem="{Binding SelectedAgent}">
@@ -117,13 +133,15 @@
                     </StackPanel>
                 </Grid>
 
-                <Grid Grid.Row="3" Margin="0,18,0,0" RowDefinitions="Auto,*">
+                <Grid Grid.Row="3" Margin="0,18,0,0" RowDefinitions="Auto,*"
+                      IsVisible="{Binding IsTaskRunnerVisible}">
                     <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Task prompt" />
                     <TextBox Grid.Row="1" Text="{Binding Prompt}" AcceptsReturn="True" TextWrapping="Wrap"
-                             MinHeight="130" VerticalContentAlignment="Top" />
+                             Height="150" VerticalContentAlignment="Top" />
                 </Grid>
 
-                <Grid Grid.Row="4" Margin="0,16,0,0" ColumnDefinitions="*,16,*,Auto">
+                <Grid Grid.Row="4" Margin="0,16,0,0" ColumnDefinitions="*,16,*,Auto"
+                      IsVisible="{Binding IsTaskRunnerVisible}">
                     <StackPanel>
                         <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Gated output path" />
                         <TextBox Text="{Binding OutputPath}" PlaceholderText="staging/result.md" />
@@ -132,18 +150,155 @@
                         <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Text attachments · semicolon separated" />
                         <TextBox Text="{Binding AttachmentPaths}" PlaceholderText="docs/source.md; src/file.py" />
                     </StackPanel>
-                    <Button Grid.Column="3" Margin="16,22,0,0" Padding="26,9" Content="Run secured task"
+                    <Button Classes="primary" Grid.Column="3" Margin="16,22,0,0" Padding="26,9" Content="Run secured task"
                             Command="{Binding RunTaskCommand}" />
                 </Grid>
 
-                <Grid Grid.Row="5" Margin="0,18,0,0" RowDefinitions="Auto,*">
+                <Grid Grid.Row="5" Margin="0,18,0,0" RowDefinitions="Auto,*"
+                      IsVisible="{Binding IsTaskRunnerVisible}">
                     <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Gated result" />
                     <TextBox Grid.Row="1" Text="{Binding Result}" IsReadOnly="True" AcceptsReturn="True"
-                             TextWrapping="Wrap" VerticalContentAlignment="Top" />
+                             TextWrapping="Wrap" Height="180" VerticalContentAlignment="Top" />
                 </Grid>
 
                 <Border Grid.Row="6" Margin="0,18,0,0" Padding="14" Background="#12151A"
-                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8">
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8"
+                        IsVisible="{Binding IsAgentsVisible}">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock FontWeight="SemiBold" Foreground="#F4F6F8" Text="Agents" />
+                            <TextBlock Grid.Column="1" Margin="14,1,0,0" Foreground="#8D97A5"
+                                       Text="Loaded profiles and authorized task types" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Agents}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="agents:AgentProfileDto">
+                                    <Border Width="260" MinHeight="88" Margin="0,0,8,6" Padding="10"
+                                            Background="#0D1014" CornerRadius="6">
+                                        <StackPanel Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#DDE2E8"
+                                                           Text="{Binding Id}" />
+                                                <TextBlock Grid.Column="1" FontSize="10" Foreground="#77D39A"
+                                                           Text="active" />
+                                            </Grid>
+                                            <TextBlock FontSize="10" Foreground="#7E8997" Text="{Binding Role}" />
+                                            <TextBlock FontSize="10" Foreground="#7E8997"
+                                                       Text="Task types available in Task runner" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="6" Margin="0,18,0,0" Padding="14" Background="#12151A"
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8"
+                        IsVisible="{Binding IsPluginsVisible}">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock FontWeight="SemiBold" Foreground="#F4F6F8" Text="Plugins" />
+                            <TextBlock Grid.Column="1" Margin="14,1,0,0" Foreground="#8D97A5"
+                                       Text="Loaded plugin health and capabilities" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Plugins}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="plugins:PluginInfoDto">
+                                    <Border Width="260" MinHeight="92" Margin="0,0,8,6" Padding="10"
+                                            Background="#0D1014" CornerRadius="6">
+                                        <StackPanel Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#DDE2E8"
+                                                           Text="{Binding Id}" />
+                                                <TextBlock Grid.Column="1" FontSize="10" Foreground="#77D39A"
+                                                           Text="{Binding Status}" />
+                                            </Grid>
+                                            <TextBlock FontSize="10" Foreground="#7E8997" TextWrapping="Wrap"
+                                                       Text="{Binding Kind}" />
+                                            <TextBlock FontSize="10" Foreground="#7E8997" TextWrapping="Wrap"
+                                                       Text="{Binding Detail}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="6" Margin="0,18,0,0" Padding="14" Background="#12151A"
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8"
+                        IsVisible="{Binding IsRagVisible}">
+                    <Grid ColumnDefinitions="*,*,Auto" RowDefinitions="Auto,Auto,Auto,*" ColumnSpacing="12" RowSpacing="8">
+                        <TextBlock FontWeight="SemiBold" Foreground="#F4F6F8" Text="RAG configuration" />
+                        <TextBlock Grid.Column="1" Foreground="#8D97A5" Text="{Binding RagStatus}" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                            <Button Content="Load" Command="{Binding LoadRagConfigurationCommand}" />
+                            <Button Content="Save" Command="{Binding SaveRagConfigurationCommand}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1">
+                            <TextBlock Foreground="#8D97A5" Text="Project" />
+                            <TextBox Text="{Binding RagProject}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1">
+                            <TextBlock Foreground="#8D97A5" Text="Location" />
+                            <TextBox Text="{Binding RagLocation}" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="2">
+                            <TextBlock Foreground="#8D97A5" Text="Corpora · key=resource per line" />
+                            <TextBox Text="{Binding RagCorporaText}" AcceptsReturn="True" Height="64" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="1">
+                            <TextBlock Foreground="#8D97A5" Text="Child scopes · child=library1,library2" />
+                            <TextBox Text="{Binding RagScopesText}" AcceptsReturn="True" Height="64" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="6" Margin="0,18,0,0" Padding="14" Background="#12151A"
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8"
+                        IsVisible="{Binding IsAuxiliaryVisible}">
+                    <StackPanel Spacing="8">
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F4F6F8"
+                                   Text="{Binding PageTitle}" />
+                        <TextBlock Foreground="#8D97A5" TextWrapping="Wrap" Text="{Binding PageMessage}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="7" Margin="0,18,0,0" Padding="14" Background="#12151A"
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8"
+                        IsVisible="{Binding IsSecurityVisible}">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,*" ColumnSpacing="12" RowSpacing="8">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold" Foreground="#F4F6F8" Text="Security tokens" />
+                            <TextBlock Foreground="#8D97A5" Text="{Binding TokenStatus}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Create / rotate Lumio token" Command="{Binding RotateLumioTokenCommand}" />
+                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="4">
+                            <TextBlock Foreground="#8D97A5" Text="{Binding BootstrapStatus}" />
+                            <TextBox Text="{Binding LumioBootstrapToken}" IsReadOnly="True" PlaceholderText="Bootstrap Lumio token" />
+                            <TextBox Text="{Binding RotatedLumioToken}" IsReadOnly="True" PlaceholderText="New Lumio token after create/rotation" />
+                        </StackPanel>
+                        <Button Grid.Row="2" Grid.ColumnSpan="2" Content="Prepare Lumio .env values"
+                                HorizontalAlignment="Left" Command="{Binding BuildLumioSetupCommand}" />
+                        <TextBox Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding LumioSetupText}" IsReadOnly="True"
+                                 AcceptsReturn="True" Height="70" PlaceholderText="Copy these values into lumio/.env" />
+                    </Grid>
+                </Border>
+
+                <Border Grid.Row="8" Margin="0,18,0,0" Padding="14" Background="#12151A"
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8"
+                        IsVisible="{Binding IsTaskRunnerVisible}">
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="Auto,*">
                             <TextBlock FontWeight="SemiBold" Foreground="#F4F6F8" Text="Gate Inspector" />
@@ -176,7 +331,46 @@
                         </ItemsControl>
                     </StackPanel>
                 </Border>
+
+                <Border Grid.Row="8" Margin="0,18,0,0" Padding="14" Background="#12151A"
+                        BorderBrush="#252A32" BorderThickness="1" CornerRadius="8"
+                        IsVisible="{Binding IsLumioVisible}">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock FontWeight="SemiBold" Foreground="#F4F6F8" Text="Lumio telemetry" />
+                            <TextBlock Grid.Column="1" Margin="14,1,0,0" Foreground="#8D97A5"
+                                       Text="Recent upload, retrieval and answer events" TextWrapping="Wrap" />
+                            <Button Grid.Column="2" Content="Refresh" Command="{Binding RefreshLumioEventsCommand}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding LumioEvents}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LumioEventSummary">
+                                    <Border Width="220" MinHeight="70" Margin="0,0,8,6" Padding="10"
+                                            Background="#0D1014" CornerRadius="6">
+                                        <StackPanel Spacing="3">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#DDE2E8"
+                                                           Text="{Binding Operation}" />
+                                                <TextBlock Grid.Column="1" FontSize="10" Foreground="{Binding StateColor}"
+                                                           Text="{Binding Outcome}" />
+                                            </Grid>
+                                            <TextBlock FontSize="10" Foreground="#7E8997" TextWrapping="Wrap"
+                                                       Text="{Binding Details}" />
+                                            <TextBlock FontSize="9" Foreground="#596473" Text="{Binding Timestamp}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
             </Grid>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>

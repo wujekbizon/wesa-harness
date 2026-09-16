@@ -46,6 +46,9 @@ EXECUTION_ENABLED_TASK_TYPES = {
     "extract_pdf",
     "validate_questions",
     "generate_from_slides",
+    "rag_retrieve",
+    "rag_upload",
+    "lumio_chat",
 }
 ISSUER_TASK_TYPES = {
     "harness-api": EXECUTION_ENABLED_TASK_TYPES,
@@ -203,6 +206,8 @@ class HarnessProtocolServer:
                         "artifact/gate",
                         "sandbox/execute",
                         "workflow/extension",
+                        "rag/retrieve",
+                        "rag/upload",
                     ],
                     "startupChecks": list(checks.checks),
                 },
@@ -319,6 +324,10 @@ class HarnessProtocolServer:
             return self._execute_sandbox(request)
         if request.method == "workflow/extension":
             return self._execute_workflow_extension(request)
+        if request.method == "rag/retrieve":
+            return self._retrieve_rag(request)
+        if request.method == "rag/upload":
+            return self._upload_rag(request)
         if request.method == "task/validate":
             envelope = TaskEnvelopeV2.from_mapping(request.params)
             manifest, _, relative_path = self._authorize_task(envelope, execute=False)
@@ -561,6 +570,63 @@ class HarnessProtocolServer:
                 },
             )
         raise ProtocolError("METHOD_NOT_FOUND", request.method)
+
+    def _retrieve_rag(self, request: RpcRequest) -> dict[str, Any]:
+        envelope_value = request.params.get("envelope")
+        if not isinstance(envelope_value, Mapping):
+            raise ProtocolError("INVALID_PARAMS", "signed envelope is required")
+        envelope = TaskEnvelopeV2.from_mapping(envelope_value)
+        self._authorize_task(envelope, execute=False)
+        collection_id = str(request.params.get("collectionId", "")).strip()
+        query = str(request.params.get("query", "")).strip()
+        top_k = int(request.params.get("topK", 8))
+        if not collection_id or not query:
+            raise ProtocolError("INVALID_PARAMS", "collectionId and query are required")
+        contexts = self.plugins.retrieval_plugin(envelope.provider_id).retrieve(collection_id, query, top_k)
+        self.audit.append(
+            "engine:retrieval",
+            "contexts_retrieved",
+            {
+                "taskId": envelope.task_id,
+                "collectionId": collection_id,
+                "count": len(contexts),
+                "outcome": "retrieved" if contexts else "abstain",
+            },
+        )
+        return success(
+            request.request_id,
+            {
+                "taskId": envelope.task_id,
+                "collectionId": collection_id,
+                "contexts": [
+                    {"sourceId": item.source_id, "sourceName": item.source_name, "content": item.content, "score": item.score}
+                    for item in contexts
+                ],
+            },
+        )
+
+    def _upload_rag(self, request: RpcRequest) -> dict[str, Any]:
+        envelope_value = request.params.get("envelope")
+        if not isinstance(envelope_value, Mapping):
+            raise ProtocolError("INVALID_PARAMS", "signed envelope is required")
+        envelope = TaskEnvelopeV2.from_mapping(envelope_value)
+        manifest, _, _ = self._authorize_task(envelope, execute=False)
+        collection_id = str(request.params.get("collectionId", "")).strip()
+        source_path = str(request.params.get("sourcePath", "")).strip()
+        display_name = str(request.params.get("displayName", "")).strip()
+        if not collection_id or not source_path or not display_name:
+            raise ProtocolError("INVALID_PARAMS", "collectionId, sourcePath and displayName are required")
+        root = Path(envelope.workspace_root).resolve(strict=False)
+        source = (root / source_path).resolve(strict=False)
+        try:
+            relative = source.relative_to(root).as_posix()
+        except ValueError as exc:
+            raise ProtocolError("PATH_DENIED", "RAG source escapes workspace") from exc
+        if not manifest.allows_read_path(relative) or not source.is_file():
+            raise ProtocolError("PATH_DENIED", "RAG source is outside the LUMIO read scope")
+        result = self.plugins.retrieval_plugin(envelope.provider_id).upload_file(collection_id, str(source), display_name)
+        self.audit.append("engine:retrieval", "source_uploaded", {"taskId": envelope.task_id, "collectionId": collection_id, "source": relative})
+        return success(request.request_id, {"taskId": envelope.task_id, "collectionId": collection_id, "source": result})
 
     def _execute_workflow_extension(self, request: RpcRequest) -> dict[str, Any]:
         envelope_value = request.params.get("envelope")

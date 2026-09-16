@@ -7,6 +7,7 @@ using Wesa.Harness.Contracts.Agents;
 using Wesa.Harness.Contracts.Providers;
 using Wesa.Harness.Contracts.Pipelines;
 using Wesa.Harness.Contracts.Tasks;
+using Wesa.Harness.Contracts.Plugins;
 using Wesa.Harness.Desktop.Services;
 
 namespace Wesa.Harness.Desktop.ViewModels;
@@ -17,6 +18,7 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
     private Guid? _workspaceId;
     private Guid? _lastAcceptedPythonTaskId;
     private bool _suppressProviderReload;
+    private string _capabilityToken = capabilityToken;
 
     public MainViewModel() : this(string.Empty)
     {
@@ -25,15 +27,32 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
     public ObservableCollection<AgentProfileDto> Agents { get; } = [];
     public ObservableCollection<ModelInfoDto> Models { get; } = [];
     public ObservableCollection<ProviderInfoDto> Providers { get; } = [];
+    public ObservableCollection<PluginInfoDto> Plugins { get; } = [];
     public ObservableCollection<string> TaskTypes { get; } = [];
     public ObservableCollection<GateInspectorStep> GateSteps { get; } = [];
+    public ObservableCollection<LumioEventSummary> LumioEvents { get; } = [];
 
     [ObservableProperty]
     public partial string Status { get; set; } = "Disconnected";
 
     [ObservableProperty]
+    public partial string BootstrapStatus { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string LumioBootstrapToken { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string TokenStatus { get; set; } = "Tokens not loaded";
+
+    [ObservableProperty]
+    public partial string RotatedLumioToken { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string LumioSetupText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string ApiAddress { get; set; } =
-        Environment.GetEnvironmentVariable("WESA_HARNESS_API_URL") ?? "http://127.0.0.1:5035";
+        Environment.GetEnvironmentVariable("WESA_HARNESS_API_URL") ?? "http://127.0.0.1:5080";
 
     [ObservableProperty]
     public partial string WorkspaceRoot { get; set; } =
@@ -67,23 +86,137 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
     public partial string GateSummary { get; set; } = "Run a task to inspect its secured execution path.";
 
     [ObservableProperty]
+    public partial string RagProject { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string RagLocation { get; set; } = "us-central1";
+
+    [ObservableProperty]
+    public partial string RagCorporaText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string RagScopesText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string RagStatus { get; set; } = "RAG config not loaded";
+
+    [ObservableProperty]
     public partial bool IsBusy { get; set; }
+
+    [ObservableProperty]
+    public partial string SelectedSection { get; set; } = "TaskRunner";
+
+    [ObservableProperty]
+    public partial bool IsTaskRunnerVisible { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool IsRagVisible { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsAgentsVisible { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLumioVisible { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsPluginsVisible { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsSecurityVisible { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsAuxiliaryVisible { get; set; }
+
+    [ObservableProperty]
+    public partial string PageTitle { get; set; } = "Harness";
+
+    [ObservableProperty]
+    public partial string PageMessage { get; set; } = "Select a section.";
+
+    partial void OnSelectedSectionChanged(string value)
+    {
+        IsTaskRunnerVisible = value == "TaskRunner";
+        IsRagVisible = value == "Rag";
+        IsAgentsVisible = value == "Agents";
+        IsLumioVisible = value == "Lumio";
+        IsPluginsVisible = value == "Plugins";
+        IsSecurityVisible = value == "Security";
+        IsAuxiliaryVisible = !IsTaskRunnerVisible && !IsRagVisible && !IsLumioVisible
+                             && !IsAgentsVisible && !IsPluginsVisible && !IsSecurityVisible;
+        PageTitle = value switch
+        {
+            "Pipelines" => "Pipelines",
+            "Approvals" => "Approvals",
+            "Audit" => "Audit",
+            "Agents" => "Agents",
+            _ => "Harness",
+        };
+        PageMessage = value switch
+        {
+            "Pipelines" => "Pipeline API is available. Desktop run/history panel pending.",
+            "Approvals" => "Approval API is available. Desktop approval panel pending.",
+            "Audit" => "Audit metrics are available through the control plane. Desktop audit browser pending.",
+            "Agents" => "Loaded agent profiles and task capabilities.",
+            _ => string.Empty,
+        };
+    }
+
+    [RelayCommand]
+    private void ShowTaskRunner() => SelectedSection = "TaskRunner";
+
+    [RelayCommand]
+    private void ShowAgents() => SelectedSection = "Agents";
+
+    [RelayCommand]
+    private void ShowRag() => SelectedSection = "Rag";
+
+    [RelayCommand]
+    private void ShowLumio() => SelectedSection = "Lumio";
+
+    [RelayCommand]
+    private void ShowPlugins() => SelectedSection = "Plugins";
+
+    [RelayCommand]
+    private void ShowPipelines() => SelectedSection = "Pipelines";
+
+    [RelayCommand]
+    private void ShowApprovals() => SelectedSection = "Approvals";
+
+    [RelayCommand]
+    private void ShowAudit() => SelectedSection = "Audit";
+
+    [RelayCommand]
+    private void ShowSecurity() => SelectedSection = "Security";
 
     [RelayCommand]
     private async Task Connect(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(capabilityToken))
-        {
-            Status = "Capability token missing from .NET user-secrets";
-            return;
-        }
-
         IsBusy = true;
         Status = "Connecting...";
         try
         {
             _client?.Dispose();
-            _client = new HarnessApiClient(new Uri(ApiAddress), capabilityToken);
+            _client = new HarnessApiClient(new Uri(ApiAddress), _capabilityToken);
+            if (string.IsNullOrWhiteSpace(_capabilityToken))
+            {
+                var bootstrap = await _client.GetBootstrapStatus(cancellationToken);
+                if (!bootstrap.Initialized)
+                {
+                    var issued = await _client.InitializeBootstrap(cancellationToken);
+                    _capabilityToken = issued.AdminToken;
+                    LumioBootstrapToken = issued.LumioToken;
+                    DesktopTokenStore.SaveAdminToken(_capabilityToken);
+                    _client.Dispose();
+                    _client = new HarnessApiClient(new Uri(ApiAddress), _capabilityToken);
+                    BootstrapStatus = "Initialized. Copy Lumio token now; it is shown once.";
+                    BuildLumioSetup();
+                }
+                else
+                {
+                    Status = "Harness initialized; admin token is required";
+                    return;
+                }
+            }
             _client.TrajectoryEvent += OnTrajectoryEvent;
             if (!await _client.ReadHealth(cancellationToken))
             {
@@ -92,6 +225,9 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
             }
             var workspace = await _client.RegisterWorkspace("WESA Harness", WorkspaceRoot, cancellationToken);
             _workspaceId = workspace.Id;
+            await LoadRagConfiguration(cancellationToken);
+            await LoadTokenStatus(cancellationToken);
+            await RefreshLumioEvents(cancellationToken);
 
             Agents.Clear();
             foreach (var agent in (await _client.ListAgents(cancellationToken))
@@ -111,6 +247,12 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
                 ?? Providers.FirstOrDefault();
             _suppressProviderReload = false;
             await LoadModels(SelectedProvider, cancellationToken);
+
+            Plugins.Clear();
+            foreach (var plugin in await _client.ListPlugins(cancellationToken))
+            {
+                Plugins.Add(plugin);
+            }
             var metrics = await _client.GetMetrics(cancellationToken);
             var auditOk = metrics.Engine.TryGetProperty("auditChainOk", out var audit)
                           && audit.ValueKind is JsonValueKind.True;
@@ -133,6 +275,170 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
             IsBusy = false;
         }
     }
+
+    [RelayCommand]
+    private async Task LoadTokenStatus(CancellationToken cancellationToken)
+    {
+        if (_client is null) return;
+        try
+        {
+            var tokens = await _client.ListCapabilityTokens(cancellationToken);
+            TokenStatus = string.Join(" · ", tokens.Select(token => $"{token.Role}:{token.Status} ({token.Prefix})"));
+        }
+        catch (Exception exception) { TokenStatus = $"Token load failed: {exception.Message}"; }
+    }
+
+    [RelayCommand]
+    private async Task RefreshLumioEvents(CancellationToken cancellationToken)
+    {
+        if (_client is null)
+        {
+            return;
+        }
+        try
+        {
+            var events = await _client.GetLumioEvents(20, cancellationToken);
+            LumioEvents.Clear();
+            foreach (var value in events)
+            {
+                var payload = value.Payload;
+                var outcome = ReadString(payload, "outcome") ?? "unknown";
+                var provider = ReadString(payload, "provider");
+                var model = ReadString(payload, "model");
+                var childId = ReadString(payload, "childId") ?? "?";
+                var libraryId = ReadString(payload, "libraryId") ?? "?";
+                var contextCount = ReadInt(payload, "contextCount");
+                var requestId = ReadString(payload, "requestId") ?? "?";
+                var details = $"{childId} · {libraryId}";
+                if (contextCount is not null)
+                {
+                    details += $" · contexts={contextCount}";
+                }
+                if (!string.IsNullOrWhiteSpace(provider))
+                {
+                    details += $" · {provider}";
+                }
+                if (!string.IsNullOrWhiteSpace(model) && model != provider)
+                {
+                    details += $"/{model}";
+                }
+                LumioEvents.Add(new LumioEventSummary(
+                    value.EventType.Replace("lumio/", "", StringComparison.Ordinal),
+                    outcome,
+                    details,
+                    $"{value.OccurredAt.ToLocalTime():HH:mm:ss} · req={requestId}",
+                    outcome switch
+                    {
+                        "retrieved" or "grounded" or "ready" => "#77D39A",
+                        "abstain" or "mock" => "#E7B75E",
+                        "failed" or "rejected" or "empty" => "#F27676",
+                        _ => "#76A9FA",
+                    }));
+            }
+        }
+        catch (Exception exception)
+        {
+            Status = $"Lumio events load failed: {exception.Message}";
+        }
+    }
+
+    private static string? ReadString(JsonElement payload, string name)
+        => payload.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static int? ReadInt(JsonElement payload, string name)
+        => payload.TryGetProperty(name, out var value) && value.TryGetInt32(out var result)
+            ? result
+            : null;
+
+    [RelayCommand]
+    private async Task RotateLumioToken(CancellationToken cancellationToken)
+    {
+        if (_client is null) { TokenStatus = "Connect first"; return; }
+        try
+        {
+            var token = (await _client.ListCapabilityTokens(cancellationToken)).FirstOrDefault(value => value.Role == "lumio-client" && value.Status == "active");
+            var issued = token is null
+                ? await _client.CreateCapabilityToken(new CreateCapabilityTokenRequestDto("Lumio service", "lumio-client", null), cancellationToken)
+                : await _client.RotateCapabilityToken(token.Id, cancellationToken);
+            RotatedLumioToken = issued.Token;
+            TokenStatus = "Lumio token rotated; update Lumio secret, then revoke the old token.";
+            BuildLumioSetup();
+        }
+        catch (Exception exception) { TokenStatus = $"Token rotation failed: {exception.Message}"; }
+    }
+
+    [RelayCommand]
+    private void BuildLumioSetup()
+    {
+        var token = string.IsNullOrWhiteSpace(RotatedLumioToken) ? LumioBootstrapToken : RotatedLumioToken;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            TokenStatus = "Initialize or rotate Lumio token first";
+            return;
+        }
+        LumioSetupText = $"LUMIO_MOCK_HARNESS=false{Environment.NewLine}HARNESS_BASE_URL={ApiAddress}{Environment.NewLine}HARNESS_LUMIO_TOKEN={token}{Environment.NewLine}LUMIO_SHARED_CORPUS_ID=lumio-shared-knowledge";
+        TokenStatus = "Lumio .env values prepared; copy into lumio/.env";
+    }
+
+    [RelayCommand]
+    private async Task LoadRagConfiguration(CancellationToken cancellationToken)
+    {
+        if (_client is null)
+        {
+            RagStatus = "Connect first";
+            return;
+        }
+        try
+        {
+            var value = await _client.GetRagConfiguration(cancellationToken);
+            RagProject = value.Project;
+            RagLocation = value.Location;
+            RagCorporaText = string.Join(Environment.NewLine, value.Corpora.Select(item => $"{item.Key}={item.Value}"));
+            RagScopesText = string.Join(Environment.NewLine, value.AllowedChildLibraries.Select(item => $"{item.Key}={string.Join(',', item.Value)}"));
+            RagStatus = "RAG config loaded";
+        }
+        catch (Exception exception)
+        {
+            RagStatus = $"RAG config load failed: {exception.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveRagConfiguration(CancellationToken cancellationToken)
+    {
+        if (_client is null)
+        {
+            RagStatus = "Connect first";
+            return;
+        }
+        try
+        {
+            var corpora = ParseKeyValueLines(RagCorporaText);
+            var scopes = RagScopesText
+                .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(line => line.Split('=', 2, StringSplitOptions.TrimEntries))
+                .Where(parts => parts.Length == 2)
+                .ToDictionary(parts => parts[0], parts => parts[1].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries), StringComparer.Ordinal);
+            var saved = await _client.SaveRagConfiguration(
+                new VertexRagConfigurationDto(RagProject.Trim(), RagLocation.Trim(), corpora, scopes),
+                cancellationToken);
+            RagProject = saved.Project;
+            RagLocation = saved.Location;
+            RagStatus = "RAG config saved and audited";
+        }
+        catch (Exception exception)
+        {
+            RagStatus = $"RAG config save failed: {exception.Message}";
+        }
+    }
+
+    private static Dictionary<string, string> ParseKeyValueLines(string value)
+        => value.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(line => line.Split('=', 2, StringSplitOptions.TrimEntries))
+            .Where(parts => parts.Length == 2)
+            .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
 
     [RelayCommand]
     private async Task RunTask(CancellationToken cancellationToken)
@@ -521,3 +827,10 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
 }
 
 public sealed record GateInspectorStep(string Stage, string State, string Detail, string StateColor);
+
+public sealed record LumioEventSummary(
+    string Operation,
+    string Outcome,
+    string Details,
+    string Timestamp,
+    string StateColor);

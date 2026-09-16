@@ -11,7 +11,7 @@ public sealed class LocalCapabilityAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IConfiguration configuration)
+    CapabilityTokenStore tokenStore)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string SchemeName = "WesaLocalCapability";
@@ -19,27 +19,29 @@ public sealed class LocalCapabilityAuthenticationHandler(
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var gregToken = configuration["Security:CapabilityToken"];
-        var mobileToken = configuration["Security:MobileMonitorToken"];
-        if (string.IsNullOrWhiteSpace(gregToken))
-        {
-            return Task.FromResult(AuthenticateResult.Fail("Capability token is not configured"));
-        }
-
         var supplied = Request.Headers[Header].ToString();
-        var greg = Matches(gregToken, supplied);
-        var observer = greg || Matches(mobileToken, supplied);
-        if (!observer)
+        var authenticated = tokenStore.Authenticate(supplied);
+        if (authenticated is null)
         {
             return Task.FromResult(AuthenticateResult.Fail("Invalid capability token"));
         }
+        var greg = authenticated.Value.Role == "greg";
+        var lumio = authenticated.Value.Role == "lumio-client";
+        var observer = greg || authenticated.Value.Role == "observer";
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, greg ? "greg" : "mobile-monitor"),
-            new(ClaimTypes.Name, greg ? "Greg" : "Mobile monitor"),
-            new(ClaimTypes.Role, "observer"),
+            new(ClaimTypes.NameIdentifier, greg ? "greg" : lumio ? "lumio-service" : "mobile-monitor"),
+            new(ClaimTypes.Name, greg ? "Greg" : lumio ? "Lumio service" : "Mobile monitor"),
         };
+        if (observer)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "observer"));
+        }
+        if (lumio)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "lumio-client"));
+        }
         if (greg)
         {
             claims.Add(new Claim(ClaimTypes.Role, "greg"));
@@ -50,10 +52,4 @@ public sealed class LocalCapabilityAuthenticationHandler(
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
     }
 
-    private static bool Matches(string? expected, string supplied)
-        => !string.IsNullOrWhiteSpace(expected)
-           && !string.IsNullOrWhiteSpace(supplied)
-           && CryptographicOperations.FixedTimeEquals(
-               Encoding.UTF8.GetBytes(expected),
-               Encoding.UTF8.GetBytes(supplied));
 }

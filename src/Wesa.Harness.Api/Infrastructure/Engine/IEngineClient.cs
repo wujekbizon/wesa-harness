@@ -25,6 +25,18 @@ public interface IEngineClient
         string operation,
         JsonElement inputs,
         CancellationToken cancellationToken);
+    Task<RagRetrievalResponse> RetrieveRag(
+        TaskEnvelopeV2 envelope,
+        string collectionId,
+        string query,
+        int topK,
+        CancellationToken cancellationToken);
+    Task<RagUploadResponse> UploadRag(
+        TaskEnvelopeV2 envelope,
+        string collectionId,
+        string sourcePath,
+        string displayName,
+        CancellationToken cancellationToken);
     Task<AgentProfilesDto> ListAgents(CancellationToken cancellationToken);
     Task<JsonElement> ReadHealth(CancellationToken cancellationToken);
 }

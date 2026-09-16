@@ -135,6 +135,32 @@ public sealed class JsonRpcStdioEngineClient(
             ?? throw new InvalidOperationException("Engine returned an empty workflow extension response");
     }
 
+    public async Task<RagRetrievalResponse> RetrieveRag(
+        TaskEnvelopeV2 envelope,
+        string collectionId,
+        string query,
+        int topK,
+        CancellationToken cancellationToken)
+    {
+        await Initialize(cancellationToken);
+        var response = await Call("rag/retrieve", new { envelope, collectionId, query, topK }, cancellationToken);
+        return response.Deserialize<RagRetrievalResponse>(JsonOptions)
+            ?? throw new InvalidOperationException("Engine returned an empty RAG response");
+    }
+
+    public async Task<RagUploadResponse> UploadRag(
+        TaskEnvelopeV2 envelope,
+        string collectionId,
+        string sourcePath,
+        string displayName,
+        CancellationToken cancellationToken)
+    {
+        await Initialize(cancellationToken);
+        var response = await Call("rag/upload", new { envelope, collectionId, sourcePath, displayName }, cancellationToken);
+        return response.Deserialize<RagUploadResponse>(JsonOptions)
+            ?? throw new InvalidOperationException("Engine returned an empty RAG upload response");
+    }
+
     public async Task<AgentProfilesDto> ListAgents(CancellationToken cancellationToken)
     {
         await Initialize(cancellationToken);

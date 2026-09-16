@@ -201,6 +201,16 @@ def test_vertex_provider_is_discovered_and_lists_configured_models(monkeypatch):
     registry.stop_all()
 
 
+def test_vertex_rag_is_disabled_until_dedicated_project_and_corpus_are_configured(monkeypatch):
+    monkeypatch.delenv("WESA_VERTEX_RAG_PROJECT", raising=False)
+    monkeypatch.delenv("WESA_VERTEX_RAG_CORPORA", raising=False)
+    registry = PluginRegistry(ROOT / "plugins")
+    registry.load_all()
+
+    assert registry.statuses()["vertex-rag"].status == "disabled"
+    registry.stop_all()
+
+
 def test_plugin_enable_state_is_persisted(fake_ollama, tmp_path):
     state = tmp_path / "plugins.json"
     registry = PluginRegistry(ROOT / "plugins", state)

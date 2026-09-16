@@ -608,7 +608,8 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.11, )",
           "Microsoft.EntityFrameworkCore": "[10.0.11, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Wesa.Harness.Contracts": "[0.2.0, )"
+          "System.Security.Cryptography.ProtectedData": "[9.0.6, )",
+          "Wesa.Harness.Contracts": "[0.6.0, )"
         }
       },
       "wesa.harness.contracts": {
@@ -701,6 +702,12 @@
           "Microsoft.Extensions.FileProviders.Abstractions": "10.0.11",
           "Microsoft.Extensions.FileProviders.Physical": "10.0.11"
         }
+      },
+      "System.Security.Cryptography.ProtectedData": {
+        "type": "CentralTransitive",
+        "requested": "[9.0.6, )",
+        "resolved": "9.0.6",
+        "contentHash": "yErfw/3pZkJE/VKza/Cm5idTpIKOy/vsmVi59Ta5SruPVtubzxb8CtnE8tyUpzs5pr0Y28GUFfSVzAhCLN3F/Q=="
       }
     }
   }

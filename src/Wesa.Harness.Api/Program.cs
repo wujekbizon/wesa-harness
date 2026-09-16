@@ -23,7 +23,9 @@ using Wesa.Harness.Api.Infrastructure.Data;
 using Wesa.Harness.Api.Infrastructure.Engine;
 using Wesa.Harness.Api.Infrastructure.Execution;
 using Wesa.Harness.Api.Infrastructure.Outbox;
+using Wesa.Harness.Api.Infrastructure.Rag;
 using Wesa.Harness.Api.Infrastructure.Security;
+using Wesa.Harness.Api.Infrastructure.Observability;
 using Wesa.Harness.Api.Middleware;
 
 namespace Wesa.Harness.Api;
@@ -82,8 +84,11 @@ public class Program
         });
         builder.Services.AddScoped<ISandboxService, SandboxService>();
         builder.Services.AddScoped<IObservabilityProvider, ObservabilityProvider>();
+        builder.Services.AddScoped<ILumioTelemetry, LumioTelemetryService>();
         builder.Services.AddScoped<IArtifactProvider, ArtifactProvider>();
         builder.Services.AddScoped<IApprovalProvider, ApprovalProvider>();
+        builder.Services.AddSingleton<CapabilityTokenStore>();
+        builder.Services.AddSingleton<VertexRagConfigurationStore>();
         builder.Services.AddSingleton<ITaskDispatchQueue, TaskDispatchQueue>();
         builder.Services.AddSingleton<IPipelineDispatchQueue, PipelineDispatchQueue>();
         builder.Services.AddSingleton<IOutboxSignal, OutboxSignal>();
@@ -126,6 +131,7 @@ public class Program
                 .Build();
             options.AddPolicy("Greg", policy => policy.RequireRole("greg"));
             options.AddPolicy("Observer", policy => policy.RequireRole("observer"));
+            options.AddPolicy("LumioClient", policy => policy.RequireRole("lumio-client"));
         });
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddRateLimiter(options =>

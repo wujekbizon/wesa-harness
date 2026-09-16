@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Color x:Key="AccentPurpleColor">#7B68EE</Color>
+    <SolidColorBrush x:Key="AccentPurple" Color="#7B68EE" />
+    <SolidColorBrush x:Key="PurpleBorder20" Color="#339D8FEF" />
+    <SolidColorBrush x:Key="PurpleBorder40" Color="#669D8FEF" />
+    <SolidColorBrush x:Key="PurpleBorder60" Color="#999D8FEF" />
+    <SolidColorBrush x:Key="AccentPurpleUltraLight" Color="#E0DBFA" />
+    <SolidColorBrush x:Key="AccentPurpleBorderSubtle" Color="#339D8FEF" />
+    <SolidColorBrush x:Key="AccentPurpleLight" Color="#9D8FEF" />
+    <SolidColorBrush x:Key="AccentPurpleDark" Color="#5A4FCF" />
+    <SolidColorBrush x:Key="AccentBlue" Color="#569CD6" />
+    <SolidColorBrush x:Key="IndustrialGunmetal" Color="#1E2124" />
+    <SolidColorBrush x:Key="IndustrialSteel" Color="#2D3136" />
+    <SolidColorBrush x:Key="IndustrialGlass" Color="#AA2D3136" />
+    <SolidColorBrush x:Key="IndustrialHighlight" Color="#44FFFFFF" />
+    <SolidColorBrush x:Key="MedicalSuccess" Color="#4CAF50" />
+    <SolidColorBrush x:Key="MedicalWarning" Color="#FFC107" />
+    <SolidColorBrush x:Key="MedicalAlert" Color="#FF5252" />
+    <SolidColorBrush x:Key="MedicalInfo" Color="#569CD6" />
+    <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#B0BCC7" />
+    <LinearGradientBrush x:Key="IndustrialGradient" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#2D3136" Offset="0" />
+        <GradientStop Color="#1E2124" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="LoginGradient" StartPoint="0,1" EndPoint="1,0">
+        <GradientStop Color="#E61E2124" Offset="0" />
+        <GradientStop Color="#AA2D3136" Offset="0.75" />
+        <GradientStop Color="#665A4FCF" Offset="1" />
+    </LinearGradientBrush>
+</ResourceDictionary>

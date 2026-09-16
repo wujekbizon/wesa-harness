@@ -1,0 +1,78 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style Selector="Button">
+        <Setter Property="Background" Value="{DynamicResource IndustrialSteel}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PurpleBorder40}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        <Setter Property="Padding" Value="12,7" />
+    </Style>
+    <Style Selector="Button:pointerover">
+        <Setter Property="Background" Value="{DynamicResource AccentPurpleDark}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentPurpleLight}" />
+    </Style>
+    <Style Selector="Button.nav">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="12,9" />
+    </Style>
+    <Style Selector="Button.nav:pointerover">
+        <Setter Property="Background" Value="{DynamicResource AccentPurpleBorderSubtle}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{DynamicResource AccentPurple}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentPurpleLight}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.primary:pointerover">
+        <Setter Property="Background" Value="{DynamicResource AccentPurpleLight}" />
+    </Style>
+    <Style Selector="Button.window-control">
+        <Setter Property="Background" Value="#22FFFFFF" />
+        <Setter Property="BorderBrush" Value="#44FFFFFF" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Button.window-control.close">
+        <Setter Property="Background" Value="#AA5A1E2B" />
+    </Style>
+    <Style Selector="Button.window-control:pointerover">
+        <Setter Property="Background" Value="{DynamicResource AccentPurple}" />
+    </Style>
+    <Style Selector="Button.window-control.close:pointerover">
+        <Setter Property="Background" Value="#FF4444" />
+    </Style>
+    <Style Selector="Button.link">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Padding" Value="4,2" />
+    </Style>
+    <Style Selector="Button.link:pointerover">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentPurpleLight}" />
+    </Style>
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{DynamicResource IndustrialGunmetal}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PurpleBorder20}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{DynamicResource IndustrialGunmetal}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PurpleBorder20}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+    </Style>
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{DynamicResource IndustrialGunmetal}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PurpleBorder20}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+</Styles>

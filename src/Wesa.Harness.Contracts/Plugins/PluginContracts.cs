@@ -26,3 +26,19 @@ public sealed record WorkflowExtensionResponse(
     string OutputPath,
     JsonElement? Output,
     IReadOnlyList<string> Reasons);
+
+public sealed record RetrievedContextDto(
+    string SourceId,
+    string SourceName,
+    string Content,
+    double? Score);
+
+public sealed record RagRetrievalResponse(
+    string TaskId,
+    string CollectionId,
+    IReadOnlyList<RetrievedContextDto> Contexts);
+
+public sealed record RagUploadResponse(
+    string TaskId,
+    string CollectionId,
+    JsonElement Source);
