@@ -15,4 +15,5 @@ public sealed class EngineOptions
     public string? VertexProject { get; set; }
     public string VertexLocation { get; set; } = "global";
     public string[] VertexModels { get; set; } = ["gemini-2.5-flash"];
+    public string? TypeSafeApiKey { get; set; }
 }

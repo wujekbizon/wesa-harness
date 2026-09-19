@@ -2,12 +2,14 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Threading;
+using System.Globalization;
 using System.Text.Json;
 using Wesa.Harness.Contracts.Agents;
 using Wesa.Harness.Contracts.Providers;
 using Wesa.Harness.Contracts.Pipelines;
 using Wesa.Harness.Contracts.Tasks;
 using Wesa.Harness.Contracts.Plugins;
+using Wesa.Harness.Contracts.Routing;
 using Wesa.Harness.Desktop.Services;
 
 namespace Wesa.Harness.Desktop.ViewModels;
@@ -84,6 +86,18 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
 
     [ObservableProperty]
     public partial string GateSummary { get; set; } = "Run a task to inspect its secured execution path.";
+
+    [ObservableProperty]
+    public partial string RouteSummary { get; set; } = "Automatic route details appear after task submission.";
+
+    [ObservableProperty]
+    public partial bool IsRouteVisible { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsRouteDetailsVisible { get; set; }
+
+    [ObservableProperty]
+    public partial string RouteDetails { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial string RagProject { get; set; } = string.Empty;
@@ -441,10 +455,34 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
             .ToDictionary(parts => parts[0], parts => parts[1], StringComparer.Ordinal);
 
     [RelayCommand]
+    private async Task RunRecommendedRoute(CancellationToken cancellationToken)
+    {
+        if (!HasTaskSelection())
+        {
+            Status = "Connect and select an agent/model first";
+            return;
+        }
+        await RunTaskCore(SelectedProvider!.Id, SelectedModel!.Name, "auto", cancellationToken);
+    }
+
+    [RelayCommand]
     private async Task RunTask(CancellationToken cancellationToken)
     {
-        if (_client is null || _workspaceId is null || SelectedAgent is null || SelectedProvider is null
-            || SelectedModel is null
+        if (!HasTaskSelection())
+        {
+            Status = "Connect and select an agent/model first";
+            return;
+        }
+        await RunTaskCore(SelectedProvider!.Id, SelectedModel!.Name, "manual", cancellationToken);
+    }
+
+    private async Task RunTaskCore(
+        string providerId,
+        string model,
+        string routingMode,
+        CancellationToken cancellationToken)
+    {
+        if (_client is null || _workspaceId is null || SelectedAgent is null
             || string.IsNullOrWhiteSpace(SelectedTaskType))
         {
             Status = "Connect and select an agent/model first";
@@ -457,22 +495,46 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
         }
 
         IsBusy = true;
-        Status = $"Running {SelectedAgent.Id} on {SelectedModel.Name}...";
-        Result = "Waiting for Ollama...";
+        Status = routingMode.Equals("auto", StringComparison.OrdinalIgnoreCase)
+            ? $"Jev selecting route for {SelectedAgent.Id}..."
+            : $"Running {SelectedAgent.Id} on {model}...";
+        Result = "Waiting for model...";
         ShowWaitingGate();
         try
         {
-            var task = await _client.SubmitTask(
-                new SubmitTaskRequest(
-                    _workspaceId.Value,
-                    SelectedTaskType,
-                    Prompt,
-                    SelectedAgent.Id,
-                    SelectedModel.Name,
-                    string.IsNullOrWhiteSpace(OutputPath) ? null : OutputPath,
-                    BuildAttachments(),
-                    SelectedProvider.Id),
-                cancellationToken);
+            TaskDto task;
+            if (routingMode.Equals("auto", StringComparison.OrdinalIgnoreCase))
+            {
+                var auto = await _client.SubmitAutoTask(
+                    new AutoRouteTaskRequest(
+                        _workspaceId.Value,
+                        SelectedTaskType,
+                        Prompt,
+                        SelectedAgent.Id,
+                        providerId,
+                        model,
+                        string.IsNullOrWhiteSpace(OutputPath) ? null : OutputPath,
+                        BuildAttachments()),
+                    cancellationToken);
+                task = auto.Task;
+                IsRouteVisible = true;
+                RouteDetails = FormatJevAnswers(auto.Route.Answers);
+                RouteSummary = $"Automatic route selected: {task.Provider}/{task.Model}";
+            }
+            else
+            {
+                task = await _client.SubmitTask(
+                    new SubmitTaskRequest(
+                        _workspaceId.Value,
+                        SelectedTaskType,
+                        Prompt,
+                        SelectedAgent.Id,
+                        model,
+                        string.IsNullOrWhiteSpace(OutputPath) ? null : OutputPath,
+                        BuildAttachments(),
+                        providerId),
+                    cancellationToken);
+            }
             await _client.SubscribeSession(task.SessionId, cancellationToken);
             Status = $"{task.Status} · task={task.Id}";
             ShowRunningGate("Control Plane", "Task persisted and queued");
@@ -513,6 +575,12 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
             IsBusy = false;
         }
     }
+
+    private bool HasTaskSelection()
+        => _client is not null && _workspaceId is not null && SelectedAgent is not null
+           && SelectedProvider is not null && SelectedModel is not null
+           && !string.IsNullOrWhiteSpace(SelectedTaskType);
+
 
     [RelayCommand]
     private async Task RunTextReviewPipeline(CancellationToken cancellationToken)
@@ -627,6 +695,7 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
 
     partial void OnSelectedAgentChanged(AgentProfileDto? value)
     {
+        ResetRoutePreview();
         TaskTypes.Clear();
         if (value is null)
         {
@@ -643,13 +712,17 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
 
     partial void OnSelectedTaskTypeChanged(string? value)
     {
+        ResetRoutePreview();
         OutputPath = SuggestedOutputPath(value);
     }
+
+    partial void OnPromptChanged(string value) => ResetRoutePreview();
 
     partial void OnSelectedProviderChanged(ProviderInfoDto? value)
     {
         if (!_suppressProviderReload && value is not null)
         {
+            ResetRoutePreview();
             _ = LoadModels(value, CancellationToken.None);
         }
     }
@@ -678,6 +751,74 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
             Status = $"Provider unavailable: {exception.Message}";
         }
     }
+
+    private void ResetRoutePreview()
+    {
+        IsRouteVisible = false;
+        IsRouteDetailsVisible = false;
+        RouteDetails = string.Empty;
+        RouteSummary = "Automatic route details appear after task submission.";
+    }
+
+    [RelayCommand]
+    private void ToggleRouteDetails() => IsRouteDetailsVisible = !IsRouteDetailsVisible;
+
+    private static string FormatJevAnswers(JsonElement answers)
+    {
+        if (answers.ValueKind != JsonValueKind.Object)
+        {
+            return "No typed Jev answers returned.";
+        }
+
+        var lines = new List<string>();
+        foreach (var item in answers.EnumerateObject())
+        {
+            var answer = item.Value;
+            var type = ReadString(answer, "type") ?? "unknown";
+            switch (type)
+            {
+                case "choice":
+                    lines.Add(
+                        $"{item.Name}: choice={ReadString(answer, "choice") ?? "?"}; "
+                        + $"probabilities={FormatProbabilities(answer)}; confidence={FormatProbability(answer, "confidence")}");
+                    break;
+                case "score":
+                    lines.Add(
+                        $"{item.Name}: score={FormatNumber(answer, "score")}; "
+                        + $"probabilities={FormatProbabilities(answer)}; confidence={FormatProbability(answer, "confidence")}");
+                    break;
+                case "noul":
+                    lines.Add($"{item.Name}: yes={FormatProbability(answer, "noul")}");
+                    break;
+                default:
+                    lines.Add($"{item.Name}: type={type}");
+                    break;
+            }
+        }
+        return lines.Count == 0 ? "No typed Jev answers returned." : string.Join(Environment.NewLine, lines);
+    }
+
+    private static string FormatProbabilities(JsonElement answer)
+    {
+        if (!answer.TryGetProperty("probabilities", out var values) || values.ValueKind != JsonValueKind.Object)
+        {
+            return "none";
+        }
+        return string.Join(
+            ", ",
+            values.EnumerateObject().Select(item =>
+                $"{item.Name}={item.Value.GetDouble() * 100:0.0}%"));
+    }
+
+    private static string FormatProbability(JsonElement answer, string name)
+        => answer.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+            ? $"{value.GetDouble() * 100:0.0}%"
+            : "n/a";
+
+    private static string FormatNumber(JsonElement answer, string name)
+        => answer.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number
+            ? value.GetDouble().ToString("0.00", CultureInfo.InvariantCulture)
+            : "n/a";
 
     private static bool IsSupportedTaskType(string taskType)
         => taskType is "write" or "research" or "analyze" or "general" or "review"

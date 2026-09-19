@@ -7,6 +7,7 @@ using Wesa.Harness.Contracts.Protocol;
 using Wesa.Harness.Contracts.Agents;
 using Wesa.Harness.Contracts.Providers;
 using Wesa.Harness.Contracts.Plugins;
+using Wesa.Harness.Contracts.Routing;
 
 namespace Wesa.Harness.Api.Infrastructure.Engine;
 
@@ -172,7 +173,17 @@ public sealed class JsonRpcStdioEngineClient(
     public async Task<JsonElement> ReadHealth(CancellationToken cancellationToken)
     {
         await Initialize(cancellationToken);
-        return await Call("health/read", new { }, cancellationToken);
+            return await Call("health/read", new { }, cancellationToken);
+    }
+
+    public async Task<RoutePreviewResponse> PreviewRoute(
+        RoutePreviewRequest request,
+        CancellationToken cancellationToken)
+    {
+        await Initialize(cancellationToken);
+        var response = await Call("route/preview", request, cancellationToken);
+        return response.Deserialize<RoutePreviewResponse>(JsonOptions)
+            ?? throw new InvalidOperationException("Engine returned an empty route preview response");
     }
 
     private async Task<JsonElement> Call(string method, object parameters, CancellationToken cancellationToken)
@@ -246,6 +257,10 @@ public sealed class JsonRpcStdioEngineClient(
         if (!string.IsNullOrWhiteSpace(memoryDatabase))
         {
             startInfo.Environment["WESA_HARNESS_DATABASE_URL"] = ToPsycopgDsn(memoryDatabase);
+        }
+        if (!string.IsNullOrWhiteSpace(settings.TypeSafeApiKey))
+        {
+            startInfo.Environment["TYPESAFE_API_KEY"] = settings.TypeSafeApiKey;
         }
 
         _process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };

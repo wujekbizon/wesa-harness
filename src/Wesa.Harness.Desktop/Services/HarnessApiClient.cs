@@ -11,6 +11,7 @@ using Wesa.Harness.Contracts.Observability;
 using Wesa.Harness.Contracts.Tasks;
 using Wesa.Harness.Contracts.Workspaces;
 using Wesa.Harness.Contracts.Plugins;
+using Wesa.Harness.Contracts.Routing;
 
 namespace Wesa.Harness.Desktop.Services;
 
@@ -156,6 +157,16 @@ public sealed class HarnessApiClient : IDisposable
         await EnsureSuccess(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<TaskDto>(cancellationToken)
             ?? throw new InvalidOperationException("Task response was empty");
+    }
+
+    public async Task<AutoRouteTaskResponse> SubmitAutoTask(
+        AutoRouteTaskRequest request,
+        CancellationToken cancellationToken)
+    {
+        using var response = await _client.PostAsJsonAsync("/api/tasks/auto", request, cancellationToken);
+        await EnsureSuccess(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<AutoRouteTaskResponse>(cancellationToken)
+            ?? throw new InvalidOperationException("Automatic route task response was empty");
     }
 
     public async Task<PipelineRunDto> StartTextReviewPipeline(

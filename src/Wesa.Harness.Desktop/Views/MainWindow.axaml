@@ -150,15 +150,33 @@
                         <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Text attachments · semicolon separated" />
                         <TextBox Text="{Binding AttachmentPaths}" PlaceholderText="docs/source.md; src/file.py" />
                     </StackPanel>
-                    <Button Classes="primary" Grid.Column="3" Margin="16,22,0,0" Padding="26,9" Content="Run secured task"
-                            Command="{Binding RunTaskCommand}" />
+                    <StackPanel Grid.Column="3" Margin="16,22,0,0" Orientation="Horizontal" Spacing="8">
+                        <Button Classes="primary" Padding="20,9" Content="Auto route &amp; run"
+                                Command="{Binding RunRecommendedRouteCommand}" />
+                        <Button Padding="20,9" Content="Run selected"
+                                Command="{Binding RunTaskCommand}" />
+                    </StackPanel>
                 </Grid>
 
                 <Grid Grid.Row="5" Margin="0,18,0,0" RowDefinitions="Auto,*"
                       IsVisible="{Binding IsTaskRunnerVisible}">
                     <TextBlock Foreground="#8D97A5" Margin="0,0,0,6" Text="Gated result" />
-                    <TextBox Grid.Row="1" Text="{Binding Result}" IsReadOnly="True" AcceptsReturn="True"
-                             TextWrapping="Wrap" Height="180" VerticalContentAlignment="Top" />
+                    <Grid Grid.Row="1" RowDefinitions="Auto,*" RowSpacing="8">
+                        <Border Background="#18231D" CornerRadius="6" Padding="10"
+                                IsVisible="{Binding IsRouteVisible}">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Foreground="#A9E8BD" Text="{Binding RouteSummary}" TextWrapping="Wrap" />
+                                    <Button Grid.Column="1" Margin="12,0,0,0" Padding="8,2" Content="Details"
+                                            Command="{Binding ToggleRouteDetailsCommand}" />
+                                </Grid>
+                                <TextBlock Foreground="#A9E8BD" FontSize="11" Text="{Binding RouteDetails}"
+                                           TextWrapping="Wrap" IsVisible="{Binding IsRouteDetailsVisible}" />
+                            </StackPanel>
+                        </Border>
+                        <TextBox Grid.Row="1" Text="{Binding Result}" IsReadOnly="True" AcceptsReturn="True"
+                                 TextWrapping="Wrap" Height="150" VerticalContentAlignment="Top" />
+                    </Grid>
                 </Grid>
 
                 <Border Grid.Row="6" Margin="0,18,0,0" Padding="14" Background="#12151A"
@@ -313,12 +331,12 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:GateInspectorStep">
-                                    <Border Width="142" MinHeight="78" Margin="0,0,8,6" Padding="10"
+                                    <Border Width="210" MinHeight="92" Margin="0,0,8,6" Padding="10"
                                             Background="#0D1014" CornerRadius="6">
                                         <StackPanel Spacing="4">
-                                            <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#DDE2E8"
-                                                           Text="{Binding Stage}" />
+                                             <Grid ColumnDefinitions="*,Auto">
+                                                 <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#DDE2E8"
+                                                            Text="{Binding Stage}" TextWrapping="Wrap" />
                                                 <TextBlock Grid.Column="1" FontSize="10" Foreground="{Binding StateColor}"
                                                            Text="{Binding State}" />
                                             </Grid>

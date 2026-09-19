@@ -29,6 +29,15 @@ dotnet tool run dotnet-ef database update --project src/Wesa.Harness.Api --start
 
 P4 also uses separate HMAC identities for pipelines and reduced headless commands. Generate each with the same 32-byte pattern and store them as `Security:PipelineToken` and `Security:HeadlessToken`. Never reuse or print the interactive capability token.
 
+Optional TypeSafe access is stored outside the workspace and forwarded to the supervised engine only as `TYPESAFE_API_KEY`:
+
+```powershell
+[string]$jevKey = (Get-Clipboard).Trim()
+dotnet user-secrets set "TypeSafe:ApiKey" "$jevKey" --project src/Wesa.Harness.Api
+Remove-Variable jevKey
+Set-Clipboard -Value " "
+```
+
 P4 memory uses the same Neon project but needs its PostgreSQL URI form for psycopg. Store it separately under `Memory:DatabaseUrl`; it is a format-specific secret alias, not another database:
 
 ```powershell

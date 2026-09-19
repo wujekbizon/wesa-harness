@@ -3,6 +3,7 @@ using Wesa.Harness.Contracts.Agents;
 using Wesa.Harness.Contracts.Providers;
 using System.Text.Json;
 using Wesa.Harness.Contracts.Plugins;
+using Wesa.Harness.Contracts.Routing;
 
 namespace Wesa.Harness.Api.Infrastructure.Engine;
 
@@ -39,4 +40,5 @@ public interface IEngineClient
         CancellationToken cancellationToken);
     Task<AgentProfilesDto> ListAgents(CancellationToken cancellationToken);
     Task<JsonElement> ReadHealth(CancellationToken cancellationToken);
+    Task<RoutePreviewResponse> PreviewRoute(RoutePreviewRequest request, CancellationToken cancellationToken);
 }

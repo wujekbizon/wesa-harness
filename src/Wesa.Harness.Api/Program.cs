@@ -114,6 +114,7 @@ public class Program
                 ?? "global";
             options.VertexModels = builder.Configuration.GetSection("Vertex:Models").Get<string[]>()
                 ?? ["gemini-2.5-flash"];
+            options.TypeSafeApiKey = builder.Configuration["TypeSafe:ApiKey"];
         });
         builder.Services.AddSingleton<IEngineClient, JsonRpcStdioEngineClient>();
         builder.Services.AddSingleton<ITaskSigningKeyProvider, TaskSigningKeyProvider>();

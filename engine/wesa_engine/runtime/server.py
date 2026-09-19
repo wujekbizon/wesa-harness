@@ -26,6 +26,7 @@ from wesa_engine.plugins.registry import PluginRegistry
 from wesa_engine.profiles import AgentProfile, load_profiles
 from wesa_engine.kernel.startup import run_startup_checks
 from wesa_engine.protocol import PROTOCOL_VERSION, ProtocolError, RpcRequest, failure, success
+from wesa_engine.routing import RoutingError, ShadowModelRouter
 
 EXECUTION_ENABLED_TASK_TYPES = {
     "write",
@@ -137,6 +138,7 @@ class HarnessProtocolServer:
         self.memory = MemoryService.from_environment(self.audit)
         self.tool_broker = ToolBroker(self.plugins, self.protected, self.audit)
         self.sandbox = self.plugins.sandbox_plugin("kubernetes-sandbox")
+        self.router = ShadowModelRouter(self.root, self.profiles, self.plugins, self.audit)
 
     def handle(self, raw: Mapping[str, Any]) -> dict[str, Any]:
         request_id = str(raw.get("id")) if "id" in raw else None
@@ -208,6 +210,7 @@ class HarnessProtocolServer:
                         "workflow/extension",
                         "rag/retrieve",
                         "rag/upload",
+                        "route/preview",
                     ],
                     "startupChecks": list(checks.checks),
                 },
@@ -328,6 +331,8 @@ class HarnessProtocolServer:
             return self._retrieve_rag(request)
         if request.method == "rag/upload":
             return self._upload_rag(request)
+        if request.method == "route/preview":
+            return self._preview_route(request)
         if request.method == "task/validate":
             envelope = TaskEnvelopeV2.from_mapping(request.params)
             manifest, _, relative_path = self._authorize_task(envelope, execute=False)
@@ -570,6 +575,41 @@ class HarnessProtocolServer:
                 },
             )
         raise ProtocolError("METHOD_NOT_FOUND", request.method)
+
+    def _preview_route(self, request: RpcRequest) -> dict[str, Any]:
+        params = request.params
+        required = ("agentId", "taskType", "prompt")
+        values: dict[str, str] = {}
+        for name in required:
+            value = params.get(name)
+            if not isinstance(value, str) or not value.strip():
+                raise ProtocolError("INVALID_PARAMS", f"{name} is required")
+            values[name] = value.strip() if name != "prompt" else value
+        if len(values["prompt"]) > 200_000:
+            raise ProtocolError("INVALID_PARAMS", "prompt exceeds 200000 characters")
+        current_provider = params.get("currentProvider")
+        current_model = params.get("currentModel")
+        if current_provider is not None and (not isinstance(current_provider, str) or not current_provider.strip()):
+            raise ProtocolError("INVALID_PARAMS", "currentProvider must be a non-empty string or null")
+        if current_model is not None and (not isinstance(current_model, str) or not current_model.strip()):
+            raise ProtocolError("INVALID_PARAMS", "currentModel must be a non-empty string or null")
+        task_id = params.get("taskId")
+        if task_id is not None and (not isinstance(task_id, str) or not task_id.strip()):
+            raise ProtocolError("INVALID_PARAMS", "taskId must be a non-empty string or null")
+        try:
+            return success(
+                request.request_id,
+                self.router.preview(
+                    values["agentId"],
+                    values["taskType"],
+                    values["prompt"],
+                    current_provider.strip() if isinstance(current_provider, str) else None,
+                    current_model.strip() if isinstance(current_model, str) else None,
+                    task_id.strip() if isinstance(task_id, str) else None,
+                ),
+            )
+        except RoutingError as exc:
+            raise ProtocolError("ROUTING_INVALID", str(exc)) from exc
 
     def _retrieve_rag(self, request: RpcRequest) -> dict[str, Any]:
         envelope_value = request.params.get("envelope")
