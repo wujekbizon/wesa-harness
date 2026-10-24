@@ -25,6 +25,8 @@ class RouteCandidate:
     provider: str
     model: str
     capabilities: tuple[str, ...]
+    agent_id: str | None = None
+    task_type: str | None = None
 
     def as_mapping(self) -> dict[str, Any]:
         return {
@@ -42,6 +44,7 @@ class TypeSafeDecisionClient:
         self.model = os.getenv("TYPESAFE_MODEL", "jev-latest").strip() or "jev-latest"
         self.timeout = float(os.getenv("TYPESAFE_TIMEOUT_SECONDS", "30"))
         self.max_retries = max(0, int(os.getenv("TYPESAFE_MAX_RETRIES", "2")))
+        self.handler_confidence_floor = float(os.getenv("TYPESAFE_HANDLER_CONFIDENCE_FLOOR", "0.55"))
 
     def evaluate(self, state: Mapping[str, Any], questions: Mapping[str, Any]) -> tuple[Mapping[str, Any], Mapping[str, Any], int]:
         if not self.api_key:
@@ -108,6 +111,8 @@ class ShadowModelRouter:
         current_model: str | None = None,
         task_id: str | None = None,
     ) -> dict[str, Any]:
+        if agent_id == "auto" or task_type == "auto":
+            return self._preview_auto(prompt, current_provider, current_model, task_id)
         profile = self.profiles.get(agent_id)
         if profile is None:
             raise RoutingError(f"unknown agent: {agent_id}")
@@ -206,6 +211,82 @@ class ShadowModelRouter:
             "answers": answers,
             "usage": usage,
             "fallbackReason": error,
+            "recommendedAgentId": agent_id,
+            "recommendedTaskType": task_type,
+        }
+
+    def _preview_auto(
+        self,
+        prompt: str,
+        current_provider: str | None,
+        current_model: str | None,
+        task_id: str | None,
+    ) -> dict[str, Any]:
+        handlers: list[dict[str, Any]] = []
+        manifests = load_manifest_directory(self.root / "config" / "manifests")
+        routes: dict[str, tuple[RouteCandidate, ...]] = {}
+        for agent_id, profile in sorted(self.profiles.items()):
+            manifest = manifests.get(agent_id)
+            if manifest is None:
+                continue
+            for task_type in profile.task_types:
+                if not manifest.allows_task_type(task_type):
+                    continue
+                candidates = self._candidates(profile, manifest)
+                if not candidates:
+                    continue
+                key = f"{agent_id}/{task_type}"
+                handlers.append({
+                    "id": key,
+                    "agentId": agent_id,
+                    "taskType": task_type,
+                    "role": profile.role,
+                })
+                routes[key] = candidates
+        if not handlers:
+            raise RoutingError("no authorized agent/task handlers are available")
+        safe_prompt, input_redacted = redact_text(prompt)
+        state = {
+            "task": {"agentId": "auto", "taskType": "auto", "prompt": safe_prompt, "taskId": task_id},
+            "handlers": handlers,
+            "policy": {"mode": "automatic", "selectionAuthority": "Harness validates Jev recommendation", "inputRedacted": input_redacted},
+        }
+        questions = self._questions((), tuple(handlers))
+        try:
+            answers, usage, latency_ms = self.client.evaluate(state, questions)
+            handler_answer = answers.get("handler")
+            handler_id = handler_answer.get("choice") if isinstance(handler_answer, Mapping) else None
+            confidence = handler_answer.get("confidence") if isinstance(handler_answer, Mapping) else None
+            if not isinstance(handler_id, str) or handler_id not in routes:
+                raise RoutingError("Jev returned an undeclared handler")
+            confidence_floor = getattr(self.client, "handler_confidence_floor", 0.55)
+            if not isinstance(confidence, (int, float)) or confidence < confidence_floor:
+                raise RoutingError("Jev handler selection confidence is below the automatic threshold")
+            selected_handler = next(item for item in handlers if item["id"] == handler_id)
+            candidates = routes[handler_id]
+            current = next((item for item in candidates if item.provider == current_provider and item.model == current_model), candidates[0])
+            recommendation = self._recommendation(answers, candidates, current)
+            status = "ok"
+            error = None
+        except RoutingError as exc:
+            answers, usage, latency_ms = {}, {}, 0
+            selected_handler = {"agentId": "", "taskType": ""}
+            recommendation = {"provider": "", "model": "", "candidateId": "", "allowed": False, "reason": "automatic selection requires manual fallback"}
+            status = "fallback"
+            error = str(exc)
+        self.audit.append("engine:routing", "route_auto_preview", {
+            "agentId": selected_handler.get("agentId"), "taskId": task_id,
+            "taskType": selected_handler.get("taskType"), "recommendedProvider": recommendation["provider"],
+            "recommendedModel": recommendation["model"], "status": status, "latencyMs": latency_ms, "error": error,
+        })
+        return {
+            "mode": "automatic", "status": status, "decisionProvider": "typesafe/jev",
+            "currentProvider": current.provider if status == "ok" else "", "currentModel": current.model if status == "ok" else "",
+            "recommendedProvider": recommendation["provider"], "recommendedModel": recommendation["model"],
+            "recommendationAllowed": recommendation["allowed"], "recommendationReason": recommendation["reason"],
+            "candidateCount": len(handlers), "latencyMs": latency_ms, "answers": answers, "usage": usage,
+            "fallbackReason": error, "recommendedAgentId": selected_handler.get("agentId", ""),
+            "recommendedTaskType": selected_handler.get("taskType", ""),
         }
 
     def _candidates(self, profile: AgentProfile, manifest) -> tuple[RouteCandidate, ...]:
@@ -235,7 +316,7 @@ class ShadowModelRouter:
         return "embedding" in {value.lower() for value in capabilities} or "embed" in name.lower()
 
     @staticmethod
-    def _questions(candidates: tuple[RouteCandidate, ...]) -> dict[str, Any]:
+    def _questions(candidates: tuple[RouteCandidate, ...], handlers: tuple[Mapping[str, Any], ...] = ()) -> dict[str, Any]:
         route_criteria = {
             item.identifier: (
                 f"Provider {item.provider}; model {item.model}; "
@@ -244,7 +325,7 @@ class ShadowModelRouter:
             )
             for item in candidates
         }
-        return {
+        questions = {
             "intent": {
                 "type": "choice",
                 "instructions": "What is the primary intent of `task.prompt`?",
@@ -305,12 +386,20 @@ class ShadowModelRouter:
                 "type": "noul",
                 "instructions": "Does the task require authorized tool calls or external actions?",
             },
-            "route": {
+        }
+        if handlers:
+            questions["handler"] = {
+                "type": "choice",
+                "instructions": "Which authorized agent/task handler best matches the user's primary request? Choose no_match when none fits.",
+                "criteria": {item["id"]: f"Agent {item['agentId']}; task {item['taskType']}; role {item['role']}" for item in handlers} | {"no_match": "No authorized handler fits"},
+            }
+        if candidates:
+            questions["route"] = {
                 "type": "choice",
                 "instructions": "Which authorized candidate is the best handler for this task?",
                 "criteria": route_criteria,
-            },
-        }
+            }
+        return questions
 
     @staticmethod
     def _recommendation(
@@ -337,6 +426,9 @@ class ShadowModelRouter:
             )
         elif selected is not None:
             reason = f"Jev route choice; preferred policy provider unavailable; complexity={complexity:.2f}; risk={risk:.2f}"
+        elif route_answer is None:
+            selected = current
+            reason = f"Current authorized route; no stronger provider policy candidate; complexity={complexity:.2f}; risk={risk:.2f}"
         else:
             return {
                 "provider": current.provider,

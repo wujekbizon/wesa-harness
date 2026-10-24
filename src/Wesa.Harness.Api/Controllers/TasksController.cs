@@ -60,9 +60,9 @@ public sealed class TasksController(IMediator mediator, IEngineClient engine) : 
         var task = await mediator.Send(
             new SubmitTaskCommand(
                 request.WorkspaceId,
-                request.TaskType,
+                string.IsNullOrWhiteSpace(route.RecommendedTaskType) ? request.TaskType : route.RecommendedTaskType,
                 request.Prompt,
-                request.AgentId,
+                string.IsNullOrWhiteSpace(route.RecommendedAgentId) ? request.AgentId : route.RecommendedAgentId,
                 route.RecommendedProvider,
                 route.RecommendedModel,
                 request.RequestedOutputPath,

@@ -457,9 +457,9 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
     [RelayCommand]
     private async Task RunRecommendedRoute(CancellationToken cancellationToken)
     {
-        if (!HasTaskSelection())
+        if (_client is null || _workspaceId is null || SelectedProvider is null || SelectedModel is null)
         {
-            Status = "Connect and select an agent/model first";
+            Status = "Connect and select a provider/model first";
             return;
         }
         await RunTaskCore(SelectedProvider!.Id, SelectedModel!.Name, "auto", cancellationToken);
@@ -482,8 +482,9 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
         string routingMode,
         CancellationToken cancellationToken)
     {
-        if (_client is null || _workspaceId is null || SelectedAgent is null
-            || string.IsNullOrWhiteSpace(SelectedTaskType))
+        if (_client is null || _workspaceId is null
+            || (!routingMode.Equals("auto", StringComparison.OrdinalIgnoreCase)
+                && (SelectedAgent is null || string.IsNullOrWhiteSpace(SelectedTaskType))))
         {
             Status = "Connect and select an agent/model first";
             return;
@@ -496,8 +497,8 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
 
         IsBusy = true;
         Status = routingMode.Equals("auto", StringComparison.OrdinalIgnoreCase)
-            ? $"Jev selecting route for {SelectedAgent.Id}..."
-            : $"Running {SelectedAgent.Id} on {model}...";
+            ? "Jev selecting agent and route..."
+            : $"Running {SelectedAgent!.Id} on {model}...";
         Result = "Waiting for model...";
         ShowWaitingGate();
         try
@@ -508,27 +509,27 @@ public partial class MainViewModel(string capabilityToken) : ViewModelBase
                 var auto = await _client.SubmitAutoTask(
                     new AutoRouteTaskRequest(
                         _workspaceId.Value,
-                        SelectedTaskType,
+                        routingMode.Equals("auto", StringComparison.OrdinalIgnoreCase) ? "auto" : SelectedTaskType!,
                         Prompt,
-                        SelectedAgent.Id,
-                        providerId,
-                        model,
+                        routingMode.Equals("auto", StringComparison.OrdinalIgnoreCase) ? "auto" : SelectedAgent!.Id,
+                        string.IsNullOrWhiteSpace(providerId) ? null : providerId,
+                        string.IsNullOrWhiteSpace(model) ? null : model,
                         string.IsNullOrWhiteSpace(OutputPath) ? null : OutputPath,
                         BuildAttachments()),
                     cancellationToken);
                 task = auto.Task;
                 IsRouteVisible = true;
                 RouteDetails = FormatJevAnswers(auto.Route.Answers);
-                RouteSummary = $"Automatic route selected: {task.Provider}/{task.Model}";
+                RouteSummary = $"Automatic route selected: {task.AgentId}/{task.TaskType} via {task.Provider}/{task.Model}";
             }
             else
             {
                 task = await _client.SubmitTask(
                     new SubmitTaskRequest(
                         _workspaceId.Value,
-                        SelectedTaskType,
+                        SelectedTaskType!,
                         Prompt,
-                        SelectedAgent.Id,
+                        SelectedAgent!.Id,
                         model,
                         string.IsNullOrWhiteSpace(OutputPath) ? null : OutputPath,
                         BuildAttachments(),

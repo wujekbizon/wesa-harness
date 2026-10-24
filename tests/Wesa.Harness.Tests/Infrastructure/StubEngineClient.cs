@@ -4,11 +4,31 @@ using Wesa.Harness.Contracts.Protocol;
 using Wesa.Harness.Contracts.Providers;
 using System.Text.Json;
 using Wesa.Harness.Contracts.Plugins;
+using Wesa.Harness.Contracts.Routing;
 
 namespace Wesa.Harness.Tests.Infrastructure;
 
 public sealed class StubEngineClient : IEngineClient
 {
+    public Task<RoutePreviewResponse> PreviewRoute(RoutePreviewRequest request, CancellationToken cancellationToken)
+        => Task.FromResult(new RoutePreviewResponse(
+            "automatic",
+            "ok",
+            "typesafe/jev",
+            "ollama-provider",
+            "test-model:latest",
+            "ollama-provider",
+            "test-model:latest",
+            true,
+            "stub route",
+            1,
+            1,
+            JsonSerializer.SerializeToElement(new { }),
+            JsonSerializer.SerializeToElement(new { }),
+            null,
+            request.AgentId == "auto" ? "W1" : request.AgentId,
+            request.TaskType == "auto" ? "write" : request.TaskType));
+
     public Task<InitializeResponse> Initialize(CancellationToken cancellationToken)
         => Task.FromResult(new InitializeResponse("1.0", true, [], []));
 

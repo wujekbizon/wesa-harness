@@ -24,15 +24,17 @@ public sealed record RoutePreviewResponse(
     int LatencyMs,
     JsonElement Answers,
     JsonElement Usage,
-    string? FallbackReason);
+    string? FallbackReason,
+    string RecommendedAgentId = "",
+    string RecommendedTaskType = "");
 
 public sealed record AutoRouteTaskRequest(
     Guid WorkspaceId,
     string TaskType,
     string Prompt,
     string AgentId,
-    string CurrentProvider,
-    string CurrentModel,
+    string? CurrentProvider,
+    string? CurrentModel,
     string? RequestedOutputPath,
     IReadOnlyList<Wesa.Harness.Contracts.Tasks.TaskAttachmentRequest>? Attachments = null);
 
